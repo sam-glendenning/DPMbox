@@ -20,7 +20,6 @@
  *
  * ============================================================ */
 
-
 //An anonymous function to keep things outside the global scope
 (function (window, document, undefined) {
 
@@ -340,15 +339,15 @@
      * It basically just set a cookie on the browser
      *************************************************/
 
-    var oldUILink = document.createElement('a');
-    oldUILink.setAttribute('href', '#');
-    oldUILink.innerText = 'Switch back to old UI';
-    oldUILink.text = 'Switch back to old UI';
-    oldUILink.onclick = function() {
-    	document.cookie = 'lcgdm_dav.ui=old; path=/; expires=Thu, 1 January 1970 00:00:00 GMT;';
-    	location.reload(true);
-    };
-    document.body.appendChild(oldUILink);
+    // var oldUILink = document.createElement('a');
+    // oldUILink.setAttribute('href', '#');
+    // oldUILink.innerText = 'Switch back to old UI';
+    // oldUILink.text = 'Switch back to old UI';
+    // oldUILink.onclick = function() {
+    // 	document.cookie = 'lcgdm_dav.ui=old; path=/; expires=Thu, 1 January 1970 00:00:00 GMT;';
+    // 	location.reload(true);
+    // };
+    // document.body.appendChild(oldUILink);
 
 
     /*************************************************
@@ -519,7 +518,7 @@
                 w2ui.toolbar.click('download');
             },
             onDelete: function (event) {
-                event.preventDefault(); //Needed by the (weird) way w2ui works... When false the deletion will be executed 2 times (¿?)
+                event.preventDefault(); //Needed by the (weird) way w2ui works... When false the deletion will be executed 2 times (Â¿?)
 
                 w2confirm({
                         // msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(w2ui.sidebar.get(w2ui.sidebar.selected).path)),
@@ -667,6 +666,8 @@
     }
 
 })(window, document); //End of anonymous function to keep things outside the global scope
+
+// New functionality
 
 function importBucket() 
 {
