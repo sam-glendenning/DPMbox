@@ -208,19 +208,62 @@
                  * with the Location header, where we then send the
                  * second PUT and the real upload will be made.
                  */
+
                 $.ajax({
                     method: 'PUT',
                     url: config.server + location.pathname + files[i].name,
-                    headers: {
-                        'X-No-Redirect': 1
-                    },
+                    // headers: {
+                    //     'X-No-Redirect': 1,
+                    //     'Access-Control-Request-Headers': 'Origin'
+                    // },
                     data: ' ',
                     actual_data: files[i],
                     async: true,
                     complete: function(xhr) {
+
+                        // Not reaching here because the returned xhr does not contain the necessary Allow Origin header
+
                         switch(xhr.status){
                             case 201: //Almost uploaded (WebDAV),
                             case 202: //Accepted by the server (DPM)
+                                // let formdata = new FormData();
+                                // formdata.append("file", this.actual_data);
+                                // fetch(xhr.getResponseHeader('Location'), { 
+                                //     method: 'POST', 
+                                //     body: formdata
+                                // }).then(function(xhr) {
+                                //     switch(xhr.status){
+                                //         case 204: //Uploaded (WebDAV)
+                                //         case 201: //Uploaded (DPM)
+                                //             w2ui.grid.unlock();
+                                //             w2alert('Uploaded ' + escapeHtml(this.data.name) + '(' + (this.data.type || 'n/a') + ') - ' + this.data.size + ' bytes', 'Upload complete');
+                                //             refreshContent(location.pathname);
+                                //             break;
+                                //         default: //Unknown error (permissions, network...)
+                                //             errorPopup(xhr, w2ui.grid.unlock());
+                                //     }
+                                // });
+                                // break;
+
+
+                                // console.log(xhr.getAllResponseHeaders());
+                                // const xhr2 = new XMLHttpRequest();
+                                // //xhr2.withCredentials = true;
+                                // let formdata = new FormData();
+                                // formdata.append("file", this.actual_data);
+
+                                // xhr2.addEventListener("readystatechange", function() {
+                                //     if(this.readyState === 4) {
+                                //       console.log(this.responseText);
+                                //     }
+                                // });
+
+                                // xhr2.open("POST", xhr.getResponseHeader('Location'));
+                                // xhr2.send(formdata); 
+                                // w2ui.grid.unlock();
+                                // refreshContent(location.pathname);
+                                // break
+
                                 $.dpm(xhr.getResponseHeader('Location')).put({
                                     complete:  function(xhr) {
                                         switch(xhr.status){
@@ -624,3 +667,29 @@
     }
 
 })(window, document); //End of anonymous function to keep things outside the global scope
+
+function importBucket() 
+{
+	group = document.getElementById('groupname').value;
+    bucket = document.getElementById('bucketname').value;
+    access_key = document.getElementById('access_key').value;
+    secret_key = document.getElementById('secret_key').value;
+
+    $.post("/cgi-bin/import.py", {
+        'argument': 'import_bucket',
+        'group': group,
+        'bucket': bucket,
+        'public_key': access_key,
+        'private_key': secret_key
+    },
+    function(data, status) {
+        if (status == "success")
+        {
+            w2alert('Imported bucket ' + bucket + ' for group ' + group);
+        }
+        else
+        {
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
+        }
+    });
+}

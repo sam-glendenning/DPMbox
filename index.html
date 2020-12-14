@@ -8,7 +8,7 @@
         <meta name="description" content="">
         <meta name="author" content="Juan MV Calvellido">
 
-        <title>DPMbox demo</title>
+        <title>IRIS DynaFed</title>
 
         <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/static/DPMbox/css/w2ui-1.4.2.css"/>
@@ -22,6 +22,25 @@
 
     <div id="canvas">
         <div id="layout" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <div>
+        <h3>Import a bucket</h3>
+
+        <form action="#" onsubmit="importBucket();">
+            <label for="groupname">Group name:</label><br>
+            <input required="true" type="text" id="groupname" name="groupname"><br>
+            <label for="bucketname">Bucket name:</label><br>
+            <input required="true" type="text" id="bucketname" name="bucketname"><br>
+            <label for="access_key">Access Key:</label><br>
+            <input required="true" type="text" id="access_key" name="access_key"><br>
+            <label for="secret_key">Secret Key:</label><br>
+            <input required="true" type="text" id="secret_key" name="secret_key"><br><br>
+            <input type="submit" value="Submit">
+        </form>
+
+        <br>
+
     </div>
 
 </body>
