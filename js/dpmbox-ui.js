@@ -684,13 +684,9 @@ function importBucket()
         'private_key': secret_key
     },
     function(data, status) {
-        if (status == "success")
-        {
-            w2alert('Imported bucket ' + bucket + ' for group ' + group);
-        }
-        else
-        {
-            w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
-        }
+        w2alert('Imported bucket ' + bucket + ' for group ' + group);
+    })
+    .fail(function(resp) {
+        w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
     });
 }
