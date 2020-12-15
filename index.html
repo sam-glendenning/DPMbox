@@ -27,7 +27,7 @@
     <div>
         <h3>Import a bucket</h3>
 
-        <form action="#" onsubmit="importBucket();">
+        <form>
             <label for="groupname">Group name:</label><br>
             <input required="true" type="text" id="groupname" name="groupname"><br>
             <label for="bucketname">Bucket name:</label><br>
@@ -36,7 +36,7 @@
             <input required="true" type="text" id="access_key" name="access_key"><br>
             <label for="secret_key">Secret Key:</label><br>
             <input required="true" type="text" id="secret_key" name="secret_key"><br><br>
-            <input type="submit" value="Submit">
+            <input type="button" value="Import" onclick="importBucket()">
         </form>
 
         <br>

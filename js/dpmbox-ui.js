@@ -682,11 +682,14 @@ function importBucket()
         'bucket': bucket,
         'public_key': access_key,
         'private_key': secret_key
-    },
-    function(data, status) {
+    })
+    .done(function(resp) {
         w2alert('Imported bucket ' + bucket + ' for group ' + group);
     })
     .fail(function(resp) {
         w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
+    })
+    .always(function() {
+        $('html, body').animate({ scrollTop: 0 }, 'fast');
     });
 }
