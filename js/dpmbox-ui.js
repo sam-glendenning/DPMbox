@@ -518,7 +518,7 @@
                 w2ui.toolbar.click('download');
             },
             onDelete: function (event) {
-                event.preventDefault(); //Needed by the (weird) way w2ui works... When false the deletion will be executed 2 times (Â¿?)
+                event.preventDefault(); //Needed by the (weird) way w2ui works... When false the deletion will be executed 2 times (¿?)
 
                 w2confirm({
                         // msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(w2ui.sidebar.get(w2ui.sidebar.selected).path)),
@@ -671,25 +671,70 @@
 
 function importBucket() 
 {
-	group = document.getElementById('groupname').value;
-    bucket = document.getElementById('bucketname').value;
-    access_key = document.getElementById('access_key').value;
-    secret_key = document.getElementById('secret_key').value;
+	group = document.getElementById('group_import').value;
+    bucket = document.getElementById('bucket_import').value;
+    access_key = document.getElementById('access_key_import').value;
+    secret_key = document.getElementById('secret_key_import').value;
 
-    $.post("/cgi-bin/import.py", {
-        'argument': 'import_bucket',
-        'group': group,
-        'bucket': bucket,
-        'public_key': access_key,
-        'private_key': secret_key
-    })
-    .done(function(resp) {
-        w2alert('Imported bucket ' + bucket + ' for group ' + group);
-    })
-    .fail(function(resp) {
-        w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
-    })
-    .always(function() {
-        $('html, body').animate({ scrollTop: 0 }, 'fast');
-    });
+    if (group && bucket && access_key && secret_key)
+    {
+        $.post("/cgi-bin/import.py", {
+            'group': group,
+            'bucket': bucket,
+            'public_key': access_key,
+            'private_key': secret_key
+        })
+        .done(function(resp) {
+            w2alert('Imported bucket ' + bucket + ' for group ' + group);
+        })
+        .fail(function(resp) {
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
+        })
+        .always(function() {
+            document.getElementById('import_form').reset();
+            $('html, body').animate({ scrollTop: 0 }, 'fast');
+        });
+
+        return true;
+    }
+    else
+    {
+        w2alert('Please fill out all fields');
+        return false;
+    }
+}
+
+function removeBucket() 
+{
+	group = document.getElementById('group_remove').value;
+    bucket = document.getElementById('bucket_remove').value;
+    access_key = document.getElementById('access_key_remove').value;
+    secret_key = document.getElementById('secret_key_remove').value;
+
+    if (group && bucket && access_key && secret_key)
+    {
+        $.post("/cgi-bin/remove.py", {
+            'group': group,
+            'bucket': bucket,
+            'public_key': access_key,
+            'private_key': secret_key
+        })
+        .done(function(resp) {
+            w2alert('Removed bucket ' + bucket + ' for group ' + group);
+        })
+        .fail(function(resp) {
+            w2alert('Failed to remove bucket ' + bucket + ' for group ' + group);
+        })
+        .always(function() {
+            document.getElementById('remove_form').reset();
+            $('html, body').animate({ scrollTop: 0 }, 'fast');
+        });
+
+        return true;
+    }
+    else
+    {
+        w2alert('Please fill out all fields');
+        return false;
+    }
 }
