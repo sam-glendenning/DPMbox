@@ -676,7 +676,7 @@ function importBucket()
     access_key = document.getElementById('access_key_import').value;
     secret_key = document.getElementById('secret_key_import').value;
 
-    if (group && bucket && access_key && secret_key)
+    if (group && bucket && access_key && secret_key && group != "-- Select an option --")
     {
         $.post("/cgi-bin/import.py", {
             'group': group,
@@ -699,7 +699,7 @@ function importBucket()
     }
     else
     {
-        w2alert('Please fill out all fields');
+        w2alert('Please fill out all fields.');
         return false;
     }
 }
@@ -711,7 +711,7 @@ function removeBucket()
     access_key = document.getElementById('access_key_remove').value;
     secret_key = document.getElementById('secret_key_remove').value;
 
-    if (group && bucket && access_key && secret_key)
+    if (group && bucket && access_key && secret_key && group != "-- Select an option --")
     {
         $.post("/cgi-bin/remove.py", {
             'group': group,
@@ -734,7 +734,223 @@ function removeBucket()
     }
     else
     {
-        w2alert('Please fill out all fields');
+        w2alert('Please fill out all fields.');
         return false;
     }
+}
+
+window.onload = function()
+{
+    request_user_groups();
+}
+
+function generateForms(user_groups)
+{
+    var main_div = document.createElement("div");
+    var table = document.createElement("table");
+    var tr = document.createElement("tr");
+    var td1 = document.createElement("td");
+    var td2 = document.createElement("td");
+
+    var import_header = document.createElement("h3");
+    import_header.innerHTML = "Import a bucket";
+
+    var import_form = document.createElement("form");
+    import_form.setAttribute("id", "import_form");
+
+    var group_label = document.createElement("label");
+    group_label.setAttribute("for", "groupname");
+    group_label.innerHTML = "Group name:";
+
+    var group_import = document.createElement("select");
+    group_import.setAttribute("name", "group_import");
+    group_import.setAttribute("id", "group_import");
+    var empty = document.createElement("option");
+    empty.setAttribute("disabled", true);
+    empty.setAttribute("selected", true);
+    empty.setAttribute("style", "display: none");
+    empty.innerHTML = "-- Select an option --";
+    group_import.appendChild(empty);
+    for (var i=0; i<user_groups.length; i++)
+    {
+        var group = document.createElement("option");
+        group.setAttribute("value", user_groups[i]);
+        group.innerHTML = user_groups[i];
+        group_import.appendChild(group);
+    }
+
+    var bucket_label = document.createElement("label");
+    bucket_label.setAttribute("for", "bucketname");
+    bucket_label.innerHTML = "Bucket name:";
+    var bucket_import = document.createElement("input");
+    bucket_import.setAttribute("type", "text");
+    bucket_import.setAttribute("id", "bucket_import");
+    bucket_import.setAttribute("name", "bucket_import");
+
+    var access_key_label = document.createElement("label");
+    access_key_label.setAttribute("for", "access_key");
+    access_key_label.innerHTML = "Access key:";
+    var access_key_import = document.createElement("input");
+    access_key_import.setAttribute("type", "text");
+    access_key_import.setAttribute("id", "access_key_import");
+    access_key_import.setAttribute("name", "access_key_import");
+
+    var secret_key_label = document.createElement("label");
+    secret_key_label.setAttribute("for", "bucketname");
+    secret_key_label.innerHTML = "Secret key:";
+    var secret_key_import = document.createElement("input");
+    secret_key_import.setAttribute("type", "text");
+    secret_key_import.setAttribute("id", "secret_key_import");
+    secret_key_import.setAttribute("name", "secret_key_import");
+
+    var import_button = document.createElement("input");
+    import_button.setAttribute("type", "button");
+    import_button.setAttribute("value", "Import");
+    import_button.setAttribute("onclick", "importBucket()");
+
+    import_form.appendChild(group_label);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(group_import);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(bucket_label);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(bucket_import);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(access_key_label);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(access_key_import);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(secret_key_label);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(secret_key_import);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    var br = document.createElement("br");
+    import_form.appendChild(br);
+    import_form.appendChild(import_button);
+
+    var remove_header = document.createElement("h3");
+    remove_header.innerHTML = "Remove a bucket";
+
+    var remove_form = document.createElement("form");
+    remove_form.setAttribute("id", "remove_form");
+
+    var group_label = document.createElement("label");
+    group_label.setAttribute("for", "groupname");
+    group_label.innerHTML = "Group name:";
+
+    var group_remove = document.createElement("select");
+    group_remove.setAttribute("name", "group_remove");
+    group_remove.setAttribute("id", "group_remove");
+    var empty = document.createElement("option");
+    empty.setAttribute("disabled", true);
+    empty.setAttribute("selected", true);
+    empty.setAttribute("style", "display: none");
+    empty.innerHTML = "-- Select an option --";
+    group_remove.appendChild(empty);
+    for (var i=0; i<user_groups.length; i++)
+    {
+        var group = document.createElement("option");
+        group.setAttribute("value", user_groups[i]);
+        group.innerHTML = user_groups[i];
+        group_remove.appendChild(group);
+    }
+
+    var bucket_label = document.createElement("label");
+    bucket_label.setAttribute("for", "bucketname");
+    bucket_label.innerHTML = "Bucket name:";
+    var bucket_remove = document.createElement("input");
+    bucket_remove.setAttribute("type", "text");
+    bucket_remove.setAttribute("id", "bucket_remove");
+    bucket_remove.setAttribute("name", "bucket_remove");
+
+    var access_key_label = document.createElement("label");
+    access_key_label.setAttribute("for", "access_key");
+    access_key_label.innerHTML = "Access key:";
+    var access_key_remove = document.createElement("input");
+    access_key_remove.setAttribute("type", "text");
+    access_key_remove.setAttribute("id", "access_key_remove");
+    access_key_remove.setAttribute("name", "access_key_remove");
+
+    var secret_key_label = document.createElement("label");
+    secret_key_label.setAttribute("for", "bucketname");
+    secret_key_label.innerHTML = "Secret key:";
+    var secret_key_remove = document.createElement("input");
+    secret_key_remove.setAttribute("type", "text");
+    secret_key_remove.setAttribute("id", "secret_key_remove");
+    secret_key_remove.setAttribute("name", "secret_key_remove");
+
+    var remove_button = document.createElement("input");
+    remove_button.setAttribute("type", "button");
+    remove_button.setAttribute("value", "Remove");
+    remove_button.setAttribute("onclick", "removeBucket()");
+
+    remove_form.appendChild(group_label);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(group_remove);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(bucket_label);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(bucket_remove);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(access_key_label);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(access_key_remove);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(secret_key_label);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(secret_key_remove);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    var br = document.createElement("br");
+    remove_form.appendChild(br);
+    remove_form.appendChild(remove_button);
+
+    td1.appendChild(import_header);
+    td1.appendChild(import_form);
+    td2.appendChild(remove_header);
+    td2.appendChild(remove_form);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    table.appendChild(tr);
+    main_div.appendChild(table);
+
+    document.getElementsByTagName('body')[0].appendChild(main_div);
+}
+
+function request_user_groups()
+{
+    var x = new XMLHttpRequest();
+    x.open('HEAD', location, true);
+    x.onload = function()
+    {
+        try 
+        {
+            user_groups = x.getResponseHeader('oidcgroups').split(",");
+            generateForms(user_groups);
+        }
+        catch (TypeError)
+        {
+            w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
+        }     
+    };
+    x.onerror = function() 
+    {
+        w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
+    };
+    x.send();
 }
