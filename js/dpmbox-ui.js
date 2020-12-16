@@ -573,8 +573,8 @@
         $('#toolbar_div').w2toolbar({
             name: 'toolbar',
             items: [
-                { type: 'button',  id: 'new_col',  caption: 'New directory', icon: 'fa fa-plus-square' },
-                { type: 'button',  id: 'del_col',  caption: 'Delete directory', icon: 'fa fa-minus-square' },
+                { type: 'button',  id: 'import_bucket',  caption: 'Import bucket', icon: 'fa fa-plus-square' },
+                { type: 'button',  id: 'remove_bucket',  caption: 'Remove bucket', icon: 'fa fa-minus-square' },
                 { type: 'spacer' },
                 { type: 'button',  id: 'upload',  caption: 'Upload', icon: 'fa fa-upload' },
                 { type: 'button',  id: 'download',  caption: 'Download', icon: 'fa fa-download' }
@@ -582,75 +582,12 @@
             onClick: function (event) {
                 var button = this.get(event.target);
                 switch(button.id) {
-                    case 'new_col': //New collection
-
-                        w2confirm({
-                            msg          : '<label>Name: </label>' +
-                                            '<input id="col_name_input" name="name" type="text" style="width: 80%"/>',
-                            title        : 'New collection',
-                            height       : 200,       //height of the dialog
-                            yes_text     : 'Accept',  //text for yes button
-                            no_text      : 'Cancel',  //text for no button
-                        })
-                            .yes(function () {
-                                w2ui.grid.lock('Creating...');
-                                var collection_name = $(col_name_input).val();
-                                var route = config.server + location.pathname + collection_name;
-                                if (collection_name)
-                                    $.dpm(route).mkcol({
-                                        complete: function(xhr) {
-                                            switch(xhr.status){
-                                                case 201:
-                                                    w2ui.grid.unlock();
-                                                    refreshSidebar(w2ui.sidebar.selected);
-                                                    break;
-                                                default: //Error 403 forbidden, or other unknow error
-                                                    errorPopup(xhr, function () {
-                                                        w2ui.grid.unlock();
-                                                        refreshSidebar(w2ui.sidebar.selected);
-                                                    });
-                                                    break;
-                                            }
-                                        }
-                                    });
-                                else{
-                                    w2alert('Invalid collection name');
-                                    w2ui.toolbar.click('new_col'); //Reopen the name input dialog
-                                }
-                            })
-                            .no(function () {
-                            });
+                    case 'import_bucket': // Import bucket
+                        request_user_groups("import");
                         break;
 
-                    case 'del_col': //Delete collection
-
-                        w2confirm({
-                            // msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(w2ui.sidebar.get(w2ui.sidebar.selected).path)),
-                            msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(location.pathname)),
-                            title        : 'Delete collection',
-                            yes_text     : 'Accept',     // text for yes button
-                            no_text      : 'Cancel',      // text for no button
-                        })
-                            .yes(function () {
-                                w2ui.grid.lock('Deleting...');
-                                $.dpm(config.server + location.pathname).remove({
-                                    complete: function(xhr) {
-                                        switch(xhr.status){
-                                            case 204:
-                                                w2ui.grid.unlock();
-                                                var parent = w2ui.sidebar.get(w2ui.sidebar.selected).parent.id;
-                                                w2ui.sidebar.remove(w2ui.sidebar.selected);
-                                                refreshSidebar(parent);
-                                                w2ui.sidebar.select(parent);
-                                                break;
-                                            default: //Error 403 forbidden, or other unknow error
-                                                errorPopup(xhr, w2ui.grid.unlock());
-                                            }
-                                    }
-                                });
-                            })
-                            .no(function () {
-                            });
+                    case 'remove_bucket': // Remove bucket
+                        request_user_groups("remove");
                         break;
 
                     case 'upload': //Upload
@@ -671,10 +608,10 @@
 
 function importBucket() 
 {
-	group = document.getElementById('group_import').value;
-    bucket = document.getElementById('bucket_import').value;
-    access_key = document.getElementById('access_key_import').value;
-    secret_key = document.getElementById('secret_key_import').value;
+	group = document.getElementById('group_list').value;
+    bucket = document.getElementById('bucket').value;
+    access_key = document.getElementById('access_key').value;
+    secret_key = document.getElementById('secret_key').value;
 
     if (group && bucket && access_key && secret_key && group != "-- Select an option --")
     {
@@ -691,8 +628,8 @@ function importBucket()
             w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
         })
         .always(function() {
-            document.getElementById('import_form').reset();
             $('html, body').animate({ scrollTop: 0 }, 'fast');
+            w2ui.grid.unlock();
         });
 
         return true;
@@ -706,10 +643,10 @@ function importBucket()
 
 function removeBucket() 
 {
-	group = document.getElementById('group_remove').value;
-    bucket = document.getElementById('bucket_remove').value;
-    access_key = document.getElementById('access_key_remove').value;
-    secret_key = document.getElementById('secret_key_remove').value;
+	group = document.getElementById('group_list').value;
+    bucket = document.getElementById('bucket').value;
+    access_key = document.getElementById('access_key').value;
+    secret_key = document.getElementById('secret_key').value;
 
     if (group && bucket && access_key && secret_key && group != "-- Select an option --")
     {
@@ -726,10 +663,10 @@ function removeBucket()
             w2alert('Failed to remove bucket ' + bucket + ' for group ' + group);
         })
         .always(function() {
-            document.getElementById('remove_form').reset();
             $('html, body').animate({ scrollTop: 0 }, 'fast');
+            w2ui.grid.unlock();
         });
-
+      
         return true;
     }
     else
@@ -739,218 +676,137 @@ function removeBucket()
     }
 }
 
-window.onload = function()
-{
-    request_user_groups();
-}
-
-function generateForms(user_groups)
-{
-    var main_div = document.createElement("div");
-    var table = document.createElement("table");
-    var tr = document.createElement("tr");
-    var td1 = document.createElement("td");
-    var td2 = document.createElement("td");
-
-    var import_header = document.createElement("h3");
-    import_header.innerHTML = "Import a bucket";
-
-    var import_form = document.createElement("form");
-    import_form.setAttribute("id", "import_form");
-
-    var group_label = document.createElement("label");
-    group_label.setAttribute("for", "groupname");
-    group_label.innerHTML = "Group name:";
-
-    var group_import = document.createElement("select");
-    group_import.setAttribute("name", "group_import");
-    group_import.setAttribute("id", "group_import");
-    var empty = document.createElement("option");
-    empty.setAttribute("disabled", true);
-    empty.setAttribute("selected", true);
-    empty.setAttribute("style", "display: none");
-    empty.innerHTML = "-- Select an option --";
-    group_import.appendChild(empty);
-    for (var i=0; i<user_groups.length; i++)
-    {
-        var group = document.createElement("option");
-        group.setAttribute("value", user_groups[i]);
-        group.innerHTML = user_groups[i];
-        group_import.appendChild(group);
-    }
-
-    var bucket_label = document.createElement("label");
-    bucket_label.setAttribute("for", "bucketname");
-    bucket_label.innerHTML = "Bucket name:";
-    var bucket_import = document.createElement("input");
-    bucket_import.setAttribute("type", "text");
-    bucket_import.setAttribute("id", "bucket_import");
-    bucket_import.setAttribute("name", "bucket_import");
-
-    var access_key_label = document.createElement("label");
-    access_key_label.setAttribute("for", "access_key");
-    access_key_label.innerHTML = "Access key:";
-    var access_key_import = document.createElement("input");
-    access_key_import.setAttribute("type", "text");
-    access_key_import.setAttribute("id", "access_key_import");
-    access_key_import.setAttribute("name", "access_key_import");
-
-    var secret_key_label = document.createElement("label");
-    secret_key_label.setAttribute("for", "bucketname");
-    secret_key_label.innerHTML = "Secret key:";
-    var secret_key_import = document.createElement("input");
-    secret_key_import.setAttribute("type", "text");
-    secret_key_import.setAttribute("id", "secret_key_import");
-    secret_key_import.setAttribute("name", "secret_key_import");
-
-    var import_button = document.createElement("input");
-    import_button.setAttribute("type", "button");
-    import_button.setAttribute("value", "Import");
-    import_button.setAttribute("onclick", "importBucket()");
-
-    import_form.appendChild(group_label);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(group_import);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(bucket_label);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(bucket_import);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(access_key_label);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(access_key_import);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(secret_key_label);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(secret_key_import);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    var br = document.createElement("br");
-    import_form.appendChild(br);
-    import_form.appendChild(import_button);
-
-    var remove_header = document.createElement("h3");
-    remove_header.innerHTML = "Remove a bucket";
-
-    var remove_form = document.createElement("form");
-    remove_form.setAttribute("id", "remove_form");
-
-    var group_label = document.createElement("label");
-    group_label.setAttribute("for", "groupname");
-    group_label.innerHTML = "Group name:";
-
-    var group_remove = document.createElement("select");
-    group_remove.setAttribute("name", "group_remove");
-    group_remove.setAttribute("id", "group_remove");
-    var empty = document.createElement("option");
-    empty.setAttribute("disabled", true);
-    empty.setAttribute("selected", true);
-    empty.setAttribute("style", "display: none");
-    empty.innerHTML = "-- Select an option --";
-    group_remove.appendChild(empty);
-    for (var i=0; i<user_groups.length; i++)
-    {
-        var group = document.createElement("option");
-        group.setAttribute("value", user_groups[i]);
-        group.innerHTML = user_groups[i];
-        group_remove.appendChild(group);
-    }
-
-    var bucket_label = document.createElement("label");
-    bucket_label.setAttribute("for", "bucketname");
-    bucket_label.innerHTML = "Bucket name:";
-    var bucket_remove = document.createElement("input");
-    bucket_remove.setAttribute("type", "text");
-    bucket_remove.setAttribute("id", "bucket_remove");
-    bucket_remove.setAttribute("name", "bucket_remove");
-
-    var access_key_label = document.createElement("label");
-    access_key_label.setAttribute("for", "access_key");
-    access_key_label.innerHTML = "Access key:";
-    var access_key_remove = document.createElement("input");
-    access_key_remove.setAttribute("type", "text");
-    access_key_remove.setAttribute("id", "access_key_remove");
-    access_key_remove.setAttribute("name", "access_key_remove");
-
-    var secret_key_label = document.createElement("label");
-    secret_key_label.setAttribute("for", "bucketname");
-    secret_key_label.innerHTML = "Secret key:";
-    var secret_key_remove = document.createElement("input");
-    secret_key_remove.setAttribute("type", "text");
-    secret_key_remove.setAttribute("id", "secret_key_remove");
-    secret_key_remove.setAttribute("name", "secret_key_remove");
-
-    var remove_button = document.createElement("input");
-    remove_button.setAttribute("type", "button");
-    remove_button.setAttribute("value", "Remove");
-    remove_button.setAttribute("onclick", "removeBucket()");
-
-    remove_form.appendChild(group_label);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(group_remove);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(bucket_label);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(bucket_remove);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(access_key_label);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(access_key_remove);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(secret_key_label);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(secret_key_remove);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    var br = document.createElement("br");
-    remove_form.appendChild(br);
-    remove_form.appendChild(remove_button);
-
-    td1.appendChild(import_header);
-    td1.appendChild(import_form);
-    td2.appendChild(remove_header);
-    td2.appendChild(remove_form);
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    table.appendChild(tr);
-    main_div.appendChild(table);
-
-    document.getElementsByTagName('body')[0].appendChild(main_div);
-}
-
-function request_user_groups()
+function request_user_groups(action)
 {
     var x = new XMLHttpRequest();
-    x.open('HEAD', location, true);
+    x.open('PROPFIND', location, true);
     x.onload = function()
     {
         try 
         {
             user_groups = x.getResponseHeader('oidcgroups').split(",");
-            generateForms(user_groups);
+            userInputPopup(user_groups, action);
         }
         catch (TypeError)
         {
             w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
+            w2ui.grid.unlock();
         }     
     };
     x.onerror = function() 
     {
         w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
+        w2ui.grid.unlock();
     };
     x.send();
+}
+
+function userInputPopup(user_groups, action)
+{
+    function composeHtml(){
+        var html;
+        
+        var input_form = document.createElement("form");
+        input_form.setAttribute("id", "input_form");
+        input_form.setAttribute("align", "center");
+    
+        var group_label = document.createElement("label");
+        group_label.setAttribute("for", "groupname");
+        group_label.innerHTML = "Group name:";
+    
+        var group_list = document.createElement("select");
+        group_list.setAttribute("name", "group_list");
+        group_list.setAttribute("id", "group_list");
+        var empty = document.createElement("option");
+        empty.setAttribute("disabled", true);
+        empty.setAttribute("selected", true);
+        empty.setAttribute("style", "display: none");
+        empty.innerHTML = "-- Select an option --";
+        group_list.appendChild(empty);
+        for (var i=0; i<user_groups.length; i++)
+        {
+            var group = document.createElement("option");
+            group.setAttribute("value", user_groups[i]);
+            group.innerHTML = user_groups[i];
+            group_list.appendChild(group);
+        }
+    
+        var bucket_label = document.createElement("label");
+        bucket_label.setAttribute("for", "bucketname");
+        bucket_label.innerHTML = "Bucket name:";
+        var bucket = document.createElement("input");
+        bucket.setAttribute("type", "text");
+        bucket.setAttribute("id", "bucket");
+        bucket.setAttribute("name", "bucket");
+    
+        var access_key_label = document.createElement("label");
+        access_key_label.setAttribute("for", "access_key");
+        access_key_label.innerHTML = "Access key:";
+        var access_key = document.createElement("input");
+        access_key.setAttribute("type", "text");
+        access_key.setAttribute("id", "access_key");
+        access_key.setAttribute("name", "access_key");
+    
+        var secret_key_label = document.createElement("label");
+        secret_key_label.setAttribute("for", "bucketname");
+        secret_key_label.innerHTML = "Secret key:";
+        var secret_key = document.createElement("input");
+        secret_key.setAttribute("type", "password");
+        secret_key.setAttribute("id", "secret_key");
+        secret_key.setAttribute("name", "secret_key");
+    
+        input_form.appendChild(group_label);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(group_list);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(bucket_label);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(bucket);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(access_key_label);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(access_key);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(secret_key_label);
+        var br = document.createElement("br");
+        input_form.appendChild(br);
+        input_form.appendChild(secret_key);
+
+        html = input_form.outerHTML;
+        return html;
+    }
+
+    w2ui.grid.lock();
+
+    if (action === "import")
+    {
+        w2popup.open({
+            title: "Import",
+            body: composeHtml(),
+            modal: false,
+            showClose: true,
+            onClose: w2ui.grid.unlock(),
+            width: 600,
+            height: 400,
+            buttons: '<button class="btn" onclick="w2popup.close(); importBucket();">Import</button>'
+        });
+    }
+    else if (action === "remove")
+    {
+        w2popup.open({
+            title: "Remove",
+            body: composeHtml(),
+            modal: false,
+            showClose: true,
+            width: 600,
+            height: 400,
+            buttons: '<button class="btn" onclick="w2popup.close(); removeBucket();">Remove</button>'
+        });
+    }
 }
