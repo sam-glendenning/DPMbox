@@ -804,6 +804,7 @@ function userInputPopup(user_groups, action)
             body: composeHtml(),
             modal: false,
             showClose: true,
+            onClose: w2ui.grid.unlock(),
             width: 600,
             height: 400,
             buttons: '<button class="btn" onclick="w2popup.close(); removeBucket();">Remove</button>'
