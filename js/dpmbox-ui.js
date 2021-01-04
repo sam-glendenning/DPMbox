@@ -321,15 +321,16 @@
 
                 /* We create a first PUT request, the server will answer
                 * with the Location header, where we then send the
-                * second PUT and the real upload will be made.
+                * second PUT and the real upload will be made. A preflight OPTIONS request is made to the s3.echo URL first
+                * to check if it allows PUT requests from this domain. If it does (which it should, all imported buckets are given the
+                * right CORS configuration), then the upload can take place.
                 */
-
 
                 $.ajax({
                     method: 'PUT',
                     url: config.server + location.pathname + files[i].name,
                     headers: {
-                    //    'X-No-Redirect': 1
+                        'X-No-Redirect': 1
                     },
                     data: ' ',
                     actual_data: files[i],
@@ -338,9 +339,10 @@
                         switch(xhr.status){
                             case 201: //Almost uploaded (WebDAV),
                             case 202: //Accepted by the server (DPM)
+                            
                                 $.dpm(xhr.getResponseHeader('Location')).put({
-                                    complete:  function(xhr) {
-                                        switch(xhr.status){
+                                    complete:  function(xhr2) {
+                                        switch(xhr2.status){
                                             case 204: //Uploaded (WebDAV)
                                             case 201: //Uploaded (DPM)
                                                 w2ui.grid.unlock();
@@ -348,7 +350,7 @@
                                                 refreshContent(location.pathname);
                                                 break;
                                             default: //Unknown error (permissions, network...)
-                                                errorPopup(xhr, w2ui.grid.unlock());
+                                                errorPopup(xhr2, w2ui.grid.unlock());
                                         }
                                     },
                                     async: true,
@@ -553,7 +555,7 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                 {'caption':'Size','field':'size','size':'20','min':'15','max':'','sortable':true,'resizable':true, 'render': function (record) {return sizeNotBt(record.size);}},
                 // {'caption':'Size','field':'size','size':'20','min':'15','max':'','sortable':true,'resizable':true},
                 {'caption':'Modified','field':'mdate','size':'40%','min':'15','max':'','sortable':true,'resizable':true, 'render': function (record) {return w2utils.formatDateTime(record.mdate, 'dd/mm/yyyy,| hh24:mm:ss');}},
-                {'caption':'Modified','field':'mdate','size':'40%','min':'15','max':'','sortable':true,'resizable':true, 'render': 'date', 'hidden': true}
+                //{'caption':'Modified','field':'mdate','size':'40%','min':'15','max':'','sortable':true,'resizable':true, 'render': 'date', 'hidden': true}
             ],
             records: [
             ],
