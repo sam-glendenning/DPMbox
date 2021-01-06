@@ -699,7 +699,8 @@ function importBucket()
             'private_key': secret_key
         })
         .done(function(resp) {
-            w2alert('Imported bucket ' + bucket + ' for group ' + group);
+            //w2alert('Imported bucket ' + bucket + ' for group ' + group);
+            location.reload(true);
         })
         .fail(function(resp) {
             w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
@@ -734,7 +735,8 @@ function removeBucket()
             'private_key': secret_key
         })
         .done(function(resp) {
-            w2alert('Removed bucket ' + bucket + ' for group ' + group);
+            //w2alert('Removed bucket ' + bucket + ' for group ' + group);
+            location.reload(true);
         })
         .fail(function(resp) {
             w2alert('Failed to remove bucket ' + bucket + ' for group ' + group);
