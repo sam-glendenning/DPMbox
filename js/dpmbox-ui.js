@@ -339,7 +339,7 @@
                         switch(xhr.status){
                             case 201: //Almost uploaded (WebDAV),
                             case 202: //Accepted by the server (DPM)
-                            
+
                                 $.dpm(xhr.getResponseHeader('Location')).put({
                                     complete:  function(xhr2) {
                                         switch(xhr2.status){
@@ -379,14 +379,14 @@ fileSelector.addEventListener('change', handleFileSelect, false);
      * Article about: http://pixelscommander.com/en/javascript/javascript-file-download-ignore-content-type/
      *************************************************/
 
-    var downloadFile = function (sUrl) {
+    var downloadSingleFile = function (sUrl) {
         //iOS devices do not support downloading. We have to inform user about this.
         if (/(iP)/g.test(navigator.userAgent)) {
             w2alert('Your device does not support files downloading. Please try again in desktop browser.');
             return false;
         }
         //If in Chrome or Safari - download via virtual link click
-        if (downloadFile.isChrome || downloadFile.isSafari) {
+        if (downloadSingleFile.isChrome || downloadSingleFile.isSafari) {
             //Creating new link node.
             var link = document.createElement('a');
             link.href = sUrl;
@@ -407,8 +407,8 @@ fileSelector.addEventListener('change', handleFileSelect, false);
         window.open(sUrl, '_self');
         return true;
     };
-    downloadFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
-    downloadFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
+    downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+    downloadSingleFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
 
 
     /*************************************************
@@ -591,9 +591,9 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                 if (event.column === 0)
                     window.location = (config.server + event.recid + '?metalink');
             },
-            onDblClick: function(event){
-                w2ui.toolbar.click('download');
-            },
+            // onDblClick: function(event){
+            //     w2ui.toolbar.click('download');
+            // },
             onDelete: function (event) {
                 event.preventDefault(); //Needed by the (weird) way w2ui works... When false the deletion will be executed 2 times (¿?)
 
@@ -672,7 +672,15 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                         break;
 
                     case 'download': //Download
-                        downloadFile(config.server + w2ui.grid.getSelection());
+                        var selectedFiles = w2ui.grid.getSelection();
+                        if (selectedFiles.length === 1)
+                        {
+                            downloadSingleFile(config.server + selectedFiles);
+                        }
+                        else
+                        {
+                            downloadAndZip(selectedFiles);
+                        }                      		
                         break;
                 }
             }
@@ -682,6 +690,81 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 })(window, document); //End of anonymous function to keep things outside the global scope
 
 // New functionality
+
+var zip = null;
+var remainingFilesToDownload = -1;
+
+function zipFile(filepath, blob)
+{
+    if (window.zip === null)
+    {
+        window.zip = new JSZip();
+    }
+
+    // This puts just the files in the zip. If paths and directories are desired, include the slashes
+    var split_path = filepath.split('/');
+    var filename = split_path[split_path.length-1];
+    window.zip.file(filename, blob);
+    window.remainingFilesToDownload--;
+
+    if (window.remainingFilesToDownload === 0)
+    {
+        window.zip.generateAsync({type:"blob"})
+        .then(function(base64) {
+            saveAs(base64, "DynaFed " + getDateTime());
+        });
+
+        window.zip = null;
+        remainingFilesToDownload = -1;
+    }
+}
+
+function downloadAndZip(files)
+{
+    window.remainingFilesToDownload = files.length;
+
+    for (var i=0; i<files.length; i++)
+    {
+        downloadBlob(files[i]);
+    }
+}
+
+function downloadBlob(filepath)
+{
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', config.server + filepath, true);
+    xhr.responseType = 'blob';
+
+    xhr.onload = function(e) {
+        if (this.status === 200)
+        {
+            var blob = this.response; 
+            zipFile(filepath, blob);
+        }
+    };
+
+    xhr.onerror = function(e) {
+        alert("Failed " + e.target.status);
+        window.zip = null;
+        window.remainingFilesToDownload = -1;
+        return;
+    };
+
+    xhr.send();
+}
+
+function getDateTime()
+{
+    var currentdate = new Date(); 
+    var datetime = currentdate.getHours() + "-"  
+        + currentdate.getMinutes() + "-" 
+        + currentdate.getSeconds() + " "
+        + currentdate.getDate() + "-"
+        + (currentdate.getMonth()+1) + "-" 
+        + currentdate.getFullYear();
+
+    return datetime;
+}
 
 function importBucket() 
 {
