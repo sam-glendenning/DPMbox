@@ -22,7 +22,7 @@ body{
 	height:5%; 
 	max-width: 100%; 
 	background: #555;
-	margin-bottom: 15px;
+	margin-bottom: 5px;
 }
 
 #canvas{
@@ -113,3 +113,12 @@ body{
 .w2ui-expand {
 	font-size: 20px;
 } 
+
+#download_progress {
+	width: 200px; 
+	height: 8px; 
+	position: relative; 
+	float: right; 
+	margin-bottom: 17px; 
+	right:45px
+}
