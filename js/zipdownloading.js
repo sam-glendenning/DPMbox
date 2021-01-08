@@ -132,6 +132,26 @@ function zipFile(filepath, blob)
 function downloadAndZip(files)
 {
     cancelDownloads();
+
+    if (files.length > 500)
+    {
+        w2popup.open({
+            title: "Download Error",
+            body: 'Maximum number of allowable downloads is 500 (' + files.length + ' selected).',
+            modal: false,
+            showClose: true,
+            onClose: w2ui.grid.unlock(),
+            width: 600,
+            height: 400,
+            buttons: '<button class="btn" onclick="w2popup.close();">Ok</button>'
+        });
+
+        document.getElementById('container').innerHTML = "";
+        document.getElementById('cancel_container').innerHTML = "";
+        resetGlobalVars();
+        return;
+    }
+
     window.remainingFilesToDownload = files.length;
     window.remainingFilesToCalculateSizeOf = files.length;
 
