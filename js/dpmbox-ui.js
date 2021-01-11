@@ -379,33 +379,19 @@ fileSelector.addEventListener('change', handleFileSelect, false);
      * Article about: http://pixelscommander.com/en/javascript/javascript-file-download-ignore-content-type/
      *************************************************/
 
-    var downloadSingleFile = function (sUrl) {
-        //iOS devices do not support downloading. We have to inform user about this.
-        if (/(iP)/g.test(navigator.userAgent)) {
-            w2alert('Your device does not support files downloading. Please try again in desktop browser.');
-            return false;
-        }
-        //If in Chrome or Safari - download via virtual link click
-        if (downloadSingleFile.isChrome || downloadSingleFile.isSafari) {
-            //Creating new link node.
-            var link = document.createElement('a');
-            link.href = sUrl;
-
-            if (link.download !== undefined) {
-                //Set HTML5 download attribute. This will prevent file from opening if supported.
-                var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
-                link.download = fileName;
-            }
-            //Dispatching click event.
-            if (document.createEvent) {
-                var e = document.createEvent('MouseEvents');
-                e.initEvent('click', true, true);
-                link.dispatchEvent(e);
-                return true;
-            }
-        }
-        window.open(sUrl, '_self');
-        return true;
+    var downloadSingleFile = function (urls) {
+        urls.forEach(url => {
+            let iframe = document.createElement('iframe');
+            iframe.style.visibility = 'collapse';
+            document.body.append(iframe);
+      
+            iframe.contentDocument.write(
+              `<form action="${url.replace(/\"/g, '"')}" method="GET"></form>`
+            );
+            iframe.contentDocument.forms[0].submit();
+      
+            setTimeout(() => iframe.remove(), 2000);
+          });
     };
     downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
     downloadSingleFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
@@ -673,14 +659,31 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 
                     case 'download': //Download
                         var selectedFiles = w2ui.grid.getSelection();
-                        if (selectedFiles.length === 1)
+                        if (selectedFiles.length > 1)
                         {
-                            downloadSingleFile(config.server + selectedFiles);
+                            w2confirm({
+                                // msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(w2ui.sidebar.get(w2ui.sidebar.selected).path)),
+                                msg          : 'Downloading multiple files. Continue?',
+                                title        : 'Download confirmation',
+                                yes_text     : 'Yes',     // text for yes button
+                                no_text      : 'No',      // text for no button
+                            })
+                            .yes(function() {
+                                var selectedFiles = w2ui.grid.getSelection();
+                                var arr = [];
+                                for (var i=0; i<selectedFiles.length; i++)
+                                {
+                                    arr.push(config.server + selectedFiles[i]);
+                                }
+                                downloadSingleFile(arr);
+                            })
+                            .no(function(){});
                         }
                         else
                         {
-                            downloadAndZip(selectedFiles);
-                        }                      		
+                            downloadSingleFile(selectedFiles);
+                        }
+
                         break;
                 }
             }
@@ -708,7 +711,8 @@ function importBucket()
         })
         .done(function(resp) {
             //w2alert('Imported bucket ' + bucket + ' for group ' + group);
-            location.reload(true);
+            //location.reload(true);
+            window.location.href = config.server + "/gridpp/" + group.replace("/", "-") + "/" + bucket;
         })
         .fail(function(resp) {
             w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
