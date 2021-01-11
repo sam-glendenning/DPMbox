@@ -381,36 +381,16 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 
     var downloadSingleFile = function (urls) {
         urls.forEach(url => {
-            if (url.endsWith(".txt") || url.endsWith(".log"))
-            {
-                var xhr = new XMLHttpRequest();
-                xhr.open("GET", url, true);
-                xhr.responseType = "blob";
-                xhr.onload = function(){
-                    var urlCreator = window.URL || window.webkitURL;
-                    var imageUrl = urlCreator.createObjectURL(this.response);
-                    var tag = document.createElement('a');
-                    tag.href = imageUrl;
-                    tag.download = url.substr(url.lastIndexOf("/")+1);
-                    document.body.appendChild(tag);
-                    tag.click();
-                    document.body.removeChild(tag);
-                }
-                xhr.send();
-            }
-            else
-            {
-                let iframe = document.createElement('iframe');
-                iframe.style.visibility = 'collapse';
-                document.body.append(iframe);
-        
-                iframe.contentDocument.write(
-                `<form action="${url.replace(/\"/g, '"')}" method="GET"></form>`
-                );
-                iframe.contentDocument.forms[0].submit();
-        
-                setTimeout(() => iframe.remove(), 2000);
-            }
+            let iframe = document.createElement('iframe');
+            iframe.style.visibility = 'collapse';
+            document.body.append(iframe);
+    
+            iframe.contentDocument.write(
+            `<form action="${url.replace(/\"/g, '"')}" method="GET"></form>`
+            );
+            iframe.contentDocument.forms[0].submit();
+    
+            setTimeout(() => iframe.remove(), 2000);
         });
     };
     downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
