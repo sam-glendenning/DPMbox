@@ -393,35 +393,67 @@ fileSelector.addEventListener('change', handleFileSelect, false);
     }
 
     var downloadSingleFile = function (sUrl) {
-        //urls.forEach(url => {
-                //iOS devices do not support downloading. We have to inform user about this.
-                if (/(iP)/g.test(navigator.userAgent)) {
-                    w2alert('Your device does not support files downloading. Please try again in desktop browser.');
-                    return false;
-                }
-                //If in Chrome or Safari - download via virtual link click
-                if (downloadSingleFile.isChrome || downloadSingleFile.isSafari) {
-                    //Creating new link node.
-                    var link = document.createElement('a');
-                    link.href = sUrl;
-        
-                    if (link.download !== undefined) {
-                        //Set HTML5 download attribute. This will prevent file from opening if supported.
-                        var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
-                        link.download = fileName;
-                    }
-                    //Dispatching click event.
-                    if (document.createEvent) {
-                        var e = document.createEvent('MouseEvents');
-                        e.initEvent('click', true, true);
-                        link.dispatchEvent(e);
-                        return true;
-                    }
-                }
-                window.open(sUrl, '_self');
+        //iOS devices do not support downloading. We have to inform user about this.
+        if (/(iP)/g.test(navigator.userAgent)) {
+            w2alert('Your device does not support files downloading. Please try again in desktop browser.');
+            return false;
+        }
+
+        // This is to support file downloading when that file would open in the browser by default instead of downloading
+        // Usually the HTML download attribute in <a> elements solves this
+        // However, CORS blocks this and our files are coming cross origin so this doesn't work
+        // So we download the file to the server first through an XHR and then send it to the user
+        // This is only taxing if it's a large file
+        // Most files don't have this issue but some file types do, like txt, py, etc.
+        var fileExtension = "." + sUrl.substring(sUrl.lastIndexOf('.')+1, sUrl.length) || sUrl;
+        if (fileTypesThatOpen.includes(fileExtension))
+        {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", sUrl, true);
+            xhr.responseType = "blob";
+            xhr.onload = function(){
+                var urlCreator = window.URL || window.webkitURL;
+                var url = urlCreator.createObjectURL(this.response);
+                var tag = document.createElement('a');
+                tag.href = url;
+                tag.download = sUrl.substr(sUrl.lastIndexOf("/")+1);
+                document.body.appendChild(tag);
+                tag.click();
+                document.body.removeChild(tag);
                 return true;
-            };
-    //};
+            }
+            xhr.onerror = function()
+            {
+                w2alert("Error. File " + sUrl.substr(url.lastIndexOf("/")+1) + " failed to download. Try again later.");
+                return false;
+            }
+            xhr.send();
+        }
+        else
+        {
+            //If in Chrome or Safari - download via virtual link click
+            if (downloadSingleFile.isChrome || downloadSingleFile.isSafari) {
+                //Creating new link node.
+                var link = document.createElement('a');
+                link.href = sUrl;
+
+                if (link.download !== undefined) {
+                    //Set HTML5 download attribute. This will prevent file from opening if supported.
+                    var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
+                    link.download = fileName;
+                }
+                //Dispatching click event.
+                if (document.createEvent) {
+                    var e = document.createEvent('MouseEvents');
+                    e.initEvent('click', true, true);
+                    link.dispatchEvent(e);
+                    return true;
+                }
+            }
+            window.open(sUrl, '_self');
+            return true;
+        }
+    };
     downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
     downloadSingleFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
 
@@ -716,6 +748,32 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 })(window, document); //End of anonymous function to keep things outside the global scope
 
 // New functionality
+
+// File extensions that open in browser instead of download
+var fileTypesThatOpen = [
+    ".txt", 
+    ".py", 
+    ".pdf", 
+    ".png", 
+    ".jpg", 
+    ".mp3", 
+    ".gif", 
+    ".svg", 
+    ".tiff", 
+    ".raw", 
+    ".bmp",
+    ".3gp",
+    ".mp4",
+    ".webp",
+    ".avi",
+    ".midi",
+    ".wav",
+    ".jpeg",
+    ".html",
+    ".css",
+    ".js",
+    ".xml"
+];
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
