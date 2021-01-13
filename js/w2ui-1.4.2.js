@@ -9748,7 +9748,7 @@ var w2confirm = function (msg, title, callBack) {
                 }
                 if (this.get(this, node.id) !== null) {
                     txt = (node.caption != null ? node.caption : node.text);
-                    console.log('ERROR: Cannot insert node with id='+ node.id +' (text: '+ txt + ') because another node with the same id already exists.');
+                    //console.log('ERROR: Cannot insert node with id='+ node.id +' (text: '+ txt + ') because another node with the same id already exists.');
                     continue;
                 }
                 tmp = $.extend({}, w2sidebar.prototype.node, node);

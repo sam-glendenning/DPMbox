@@ -379,20 +379,49 @@ fileSelector.addEventListener('change', handleFileSelect, false);
      * Article about: http://pixelscommander.com/en/javascript/javascript-file-download-ignore-content-type/
      *************************************************/
 
-    var downloadSingleFile = function (urls) {
-        urls.forEach(url => {
-            let iframe = document.createElement('iframe');
-            iframe.style.visibility = 'collapse';
-            document.body.append(iframe);
-    
-            iframe.contentDocument.write(
-            `<form action="${url.replace(/\"/g, '"')}" method="GET"></form>`
-            );
-            iframe.contentDocument.forms[0].submit();
-    
-            setTimeout(() => iframe.remove(), 2000);
+    function downloadManager(urls)
+    {
+        if (urls.length == 0)
+        {
+            return;
+        }
+        var url = urls.shift();
+        downloadSingleFile(url);
+        sleep(2000).then(() => {
+            downloadManager(urls);
         });
-    };
+    }
+
+    var downloadSingleFile = function (sUrl) {
+        //urls.forEach(url => {
+                //iOS devices do not support downloading. We have to inform user about this.
+                if (/(iP)/g.test(navigator.userAgent)) {
+                    w2alert('Your device does not support files downloading. Please try again in desktop browser.');
+                    return false;
+                }
+                //If in Chrome or Safari - download via virtual link click
+                if (downloadSingleFile.isChrome || downloadSingleFile.isSafari) {
+                    //Creating new link node.
+                    var link = document.createElement('a');
+                    link.href = sUrl;
+        
+                    if (link.download !== undefined) {
+                        //Set HTML5 download attribute. This will prevent file from opening if supported.
+                        var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
+                        link.download = fileName;
+                    }
+                    //Dispatching click event.
+                    if (document.createEvent) {
+                        var e = document.createEvent('MouseEvents');
+                        e.initEvent('click', true, true);
+                        link.dispatchEvent(e);
+                        return true;
+                    }
+                }
+                window.open(sUrl, '_self');
+                return true;
+            };
+    //};
     downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
     downloadSingleFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
 
@@ -639,7 +668,7 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                 { type: 'button',  id: 'import_bucket',  caption: 'Import bucket', icon: 'fa fa-plus-square' },
                 { type: 'button',  id: 'remove_bucket',  caption: 'Remove bucket', icon: 'fa fa-minus-square' },
                 { type: 'spacer' },
-                { type: 'button',  id: 'upload',  caption: 'Upload', icon: 'fa fa-upload' },
+                //{ type: 'button',  id: 'upload',  caption: 'Upload', icon: 'fa fa-upload' },
                 { type: 'button',  id: 'download',  caption: 'Download', icon: 'fa fa-download' }
             ],
             onClick: function (event) {
@@ -669,19 +698,13 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                                 no_text      : 'No',      // text for no button
                             })
                             .yes(function() {
-                                var selectedFiles = w2ui.grid.getSelection();
-                                var arr = [];
-                                for (var i=0; i<selectedFiles.length; i++)
-                                {
-                                    arr.push(config.server + selectedFiles[i]);
-                                }
-                                downloadSingleFile(arr);
+                                downloadManager(selectedFiles)
                             })
                             .no(function(){});
                         }
                         else
                         {
-                            downloadSingleFile(selectedFiles);
+                            downloadSingleFile(selectedFiles[0]);
                         }
 
                         break;
@@ -693,6 +716,10 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 })(window, document); //End of anonymous function to keep things outside the global scope
 
 // New functionality
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 function importBucket() 
 {
@@ -712,10 +739,11 @@ function importBucket()
         .done(function(resp) {
             //w2alert('Imported bucket ' + bucket + ' for group ' + group);
             //location.reload(true);
-            window.location.href = config.server + "/gridpp/" + group.replace("/", "-") + "/" + bucket;
+            //window.location.href = config.server + '/' + location.pathname.split('/')[1] + '/' + group.replace('/', '-') + '/' + bucket;
+            w2alert('Successfully imported ' + bucket + ' for ' + group + '. It may take up to 10 mins to be accessible.');
         })
         .fail(function(resp) {
-            w2alert('Failed to import bucket ' + bucket + ' for group ' + group);
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group + '. The bucket may already exist or its information may be incorrect.');
         })
         .always(function() {
             $('html, body').animate({ scrollTop: 0 }, 'fast');
@@ -748,10 +776,11 @@ function removeBucket()
         })
         .done(function(resp) {
             //w2alert('Removed bucket ' + bucket + ' for group ' + group);
-            location.reload(true);
+            //location.reload(true);  
+            window.location.href = config.server;      
         })
         .fail(function(resp) {
-            w2alert('Failed to remove bucket ' + bucket + ' for group ' + group);
+            w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
         })
         .always(function() {
             $('html, body').animate({ scrollTop: 0 }, 'fast');
