@@ -115,16 +115,7 @@
     function errorPopup(xhr, func){
         if (xhr.status === 401)
         {
-            w2popup.open({
-                title: 'Session Expired',
-                body: "Your session has expired. Please authenticate again.",
-                modal: false,
-                showClose: true,
-                onClose: func,
-                width: 600,
-                height: 400,
-                buttons: '<button class="btn" onclick="location.reload(true);">Authenticate</button>'
-            });
+            location.reload(true);
         }
         else
         {
