@@ -32,7 +32,7 @@ body{
 	margin-right:10%;
 }
 
-/* Reducir el margen del canvas cuando la ventana es más pequeña */
+/* Reducir el margen del canvas cuando la ventana es mÃ¡s pequeÃ±a */
 @media all and (max-width: 999px){
 	#canvas{
 		margin-left: 2%;
@@ -114,11 +114,16 @@ body{
 	font-size: 20px;
 } 
 
-#download_progress {
-	width: 200px; 
-	height: 8px; 
-	position: relative; 
-	float: right; 
-	margin-bottom: 17px; 
-	right:45px
+#help-button {
+	margin-left: 10%;
+	display: inline-block;
+	padding: 6px 12px;
+	border-radius: 5px;
+	border: 1px solid transparent;
+	color: #fff;
+    background-color: #3861AA;
+    border-color: #2e6da4;
+    font-size: 16px;
+	text-align: center;
+	text-decoration: none;
 }
