@@ -574,7 +574,7 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                 toolbarReload   : true,
                 toolbarColumns  : true,
                 toolbarSearch   : true,
-                toolbarDelete   : true
+                toolbarDelete   : false		// set to false to make system fully read-only. Will be added back when uploading is working
             },
             multiSearch: true,
             searches: [
