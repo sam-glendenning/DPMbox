@@ -1,0 +1,54 @@
+.entry-content.content {
+    width: 80%;
+  }
+
+h4.subhead {
+    font-weight: bold;
+  }
+
+  h4.subsubhead {
+    font-weight: bold;
+    font-style: italic;
+  }
+
+  ul li {
+    font-size: 18px;
+  }
+
+  p.body {
+    font-size: 18px;
+    text-align: justify;
+  }
+
+  p.link {
+    font-size: 14px;
+    text-align: justify;
+  }
+
+  ol {
+    font-weight: bold;
+    font-size: 18px;
+    font-style: italic;
+  }
+
+  ol p {
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  ul {
+    font-weight: bold;
+    font-size: 18px;
+    font-style: italic;
+  }
+
+  ul p {
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  img.middleImg {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }

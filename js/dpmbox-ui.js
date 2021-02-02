@@ -370,6 +370,12 @@ fileSelector.addEventListener('change', handleFileSelect, false);
      * Article about: http://pixelscommander.com/en/javascript/javascript-file-download-ignore-content-type/
      *************************************************/
 
+    /**
+     * Handles sequential downloading of a list of files
+     * Sets a two-second delay between each download
+     * Some browsers have a problem with lots of files being requested to download at once. This gets around that
+     * @param {string[]} urls 
+     */
     function downloadManager(urls)
     {
         if (urls.length == 0)
@@ -383,6 +389,10 @@ fileSelector.addEventListener('change', handleFileSelect, false);
         });
     }
 
+    /**
+     * Used for downloading a single file from a given URL
+     * @param {string} sUrl 
+     */
     var downloadSingleFile = function (sUrl) {
         //iOS devices do not support downloading. We have to inform user about this.
         if (/(iP)/g.test(navigator.userAgent)) {
@@ -447,22 +457,6 @@ fileSelector.addEventListener('change', handleFileSelect, false);
     };
     downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
     downloadSingleFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
-
-
-    /*************************************************
-     * Setting the link to the previous UI
-     * It basically just set a cookie on the browser
-     *************************************************/
-
-    // var oldUILink = document.createElement('a');
-    // oldUILink.setAttribute('href', '#');
-    // oldUILink.innerText = 'Switch back to old UI';
-    // oldUILink.text = 'Switch back to old UI';
-    // oldUILink.onclick = function() {
-    // 	document.cookie = 'lcgdm_dav.ui=old; path=/; expires=Thu, 1 January 1970 00:00:00 GMT;';
-    // 	location.reload(true);
-    // };
-    // document.body.appendChild(oldUILink);
 
 
     /*************************************************
@@ -691,18 +685,21 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                 { type: 'button',  id: 'import_bucket',  caption: 'Import bucket', icon: 'fa fa-plus-square' },
                 { type: 'button',  id: 'remove_bucket',  caption: 'Remove bucket', icon: 'fa fa-minus-square' },
                 { type: 'spacer' },
+
+                // Upload currently disabled
                 //{ type: 'button',  id: 'upload',  caption: 'Upload', icon: 'fa fa-upload' },
+
                 { type: 'button',  id: 'download',  caption: 'Download', icon: 'fa fa-download' }
             ],
             onClick: function (event) {
                 var button = this.get(event.target);
                 switch(button.id) {
                     case 'import_bucket': // Import bucket
-                        request_user_groups("import");
+                        requestUserGroups("import");
                         break;
 
                     case 'remove_bucket': // Remove bucket
-                        request_user_groups("remove");
+                    requestUserGroups("remove");
                         break;
 
                     case 'upload': //Upload
@@ -738,9 +735,12 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 
 })(window, document); //End of anonymous function to keep things outside the global scope
 
+//////////////////////////////////////////////////////////////////
 // New functionality
+//////////////////////////////////////////////////////////////////
 
 // File extensions that open in browser instead of download
+// If user tries to download a file with extension in this list, download takes place through XHR instead of through presigned URL
 var fileTypesThatOpen = [
     ".txt", 
     ".py", 
@@ -766,12 +766,22 @@ var fileTypesThatOpen = [
     ".xml"
 ];
 
+/**
+ * Used to create an artificial delay between downloading files.
+ * Initiating too many downloads at once can prevent all of them from downloading
+ * Adding a delay helps prevent this
+ * @param {int} ms - the number of milliseconds to delay by
+ */
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
+}
 
+/**
+ * Reads form fields for importing a bucket and POSTs it to /cgi-bin/import.py, which creates the bucket config
+ */
 function importBucket() 
 {
+    // Read form fields
 	group = document.getElementById('group_list').value;
     bucket = document.getElementById('bucket').value;
     access_key = document.getElementById('access_key').value;
@@ -785,10 +795,8 @@ function importBucket()
             'public_key': access_key,
             'private_key': secret_key
         })
+        // TODO display more dynamic error message based on returned error code
         .done(function(resp) {
-            //w2alert('Imported bucket ' + bucket + ' for group ' + group);
-            //location.reload(true);
-            //window.location.href = config.server + '/' + location.pathname.split('/')[1] + '/' + group.replace('/', '-') + '/' + bucket;
             w2alert('Successfully imported ' + bucket + ' for ' + group + '. It may take up to 10 mins to be accessible.');
         })
         .fail(function(resp) {
@@ -808,6 +816,9 @@ function importBucket()
     }
 }
 
+/**
+ * Reads form fields for removing a bucket and POSTs it to /cgi-bin/remove.py, which removes the bucket config
+ */
 function removeBucket() 
 {
 	group = document.getElementById('group_list').value;
@@ -824,8 +835,6 @@ function removeBucket()
             'private_key': secret_key
         })
         .done(function(resp) {
-            //w2alert('Removed bucket ' + bucket + ' for group ' + group);
-            //location.reload(true);  
             window.location.href = config.server;      
         })
         .fail(function(resp) {
@@ -845,7 +854,13 @@ function removeBucket()
     }
 }
 
-function request_user_groups(action)
+/**
+ * Perform a request to the server to retrieve a list of the user's IAM groups
+ * This comes in the form of a header extracted from a basic PROPFIND request
+ * This is set inside the Apache server config
+ * @param {string} action - either of "import" or "remove". Displays the relevant popup based on what the user wants to do with a bucket
+ */
+function requestUserGroups(action)
 {
     var x = new XMLHttpRequest();
     x.open('PROPFIND', location, true);
@@ -864,14 +879,24 @@ function request_user_groups(action)
     };
     x.onerror = function() 
     {
+        // Can't allow bucket importing and removing if we don't know the user's IAM groups
         w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
         w2ui.grid.unlock();
     };
     x.send();
 }
 
+/**
+ * Display a popup with input fields for the user to either import or remove a bucket
+ * Creates the HTML for the popup and sets a submit action based on what action the user wants to take
+ * @param {string[]} user_groups - list of the user's IAM groups (used for the dropdown of groups for the user to choose from)
+ * @param {string} action - either of "import" or "remove". Displays the relevant popup based on what the user wants to do with a bucket
+ */
 function userInputPopup(user_groups, action)
 {
+    /**
+     * Creates the four input boxes that make up the info we need from the user. Their group, the bucket, the access key and secret key
+     */
     function composeHtml(){
         var html;
         
@@ -953,7 +978,7 @@ function userInputPopup(user_groups, action)
 
     w2ui.grid.lock();
 
-    if (action === "import")
+    if (action === "import")        // set the action of the popup as importing a bucket
     {
         w2popup.open({
             title: "Import",
@@ -966,7 +991,7 @@ function userInputPopup(user_groups, action)
             buttons: '<button class="btn" onclick="w2popup.close(); importBucket();">Import</button>'
         });
     }
-    else if (action === "remove")
+    else if (action === "remove")   // set the action of the popup as removing a bucket
     {
         w2popup.open({
             title: "Remove",

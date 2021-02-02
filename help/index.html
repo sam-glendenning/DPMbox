@@ -1,61 +1,10 @@
+<!--
+  Help page for IRIS DynaFed. Follows the same look and feel as the IRIS IAM help page.
+  Step by step guide approach for basic tasks the user wants to achieve.
+-->
+
 <!DOCTYPE html>
-<!-- saved from url=(0033)https://iris-iam.stfc.ac.uk/help/ -->
-<html lang="en_US"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>
-  .entry-content.content {
-    width: 80%;
-  }
-
-  h4.subhead {
-    font-weight: bold;
-  }
-
-  h4.subsubhead {
-    font-weight: bold;
-    font-style: italic;
-  }
-
-  ul li {
-    font-size: 18px;
-  }
-
-  p.body {
-    font-size: 18px;
-    text-align: justify;
-  }
-
-  p.link {
-    font-size: 14px;
-    text-align: justify;
-  }
-
-  ol {
-    font-weight: bold;
-    font-size: 18px;
-    font-style: italic;
-  }
-
-  ol p {
-    font-weight: normal;
-    font-style: normal;
-  }
-
-  ul {
-    font-weight: bold;
-    font-size: 18px;
-    font-style: italic;
-  }
-
-  ul p {
-    font-weight: normal;
-    font-style: normal;
-  }
-
-  img.middleImg {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-  }
-</style>
+<html lang="en_US"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
   <base href=".">
   <title>IRIS DynaFed: Help Page</title>
@@ -71,6 +20,7 @@
   <link rel="stylesheet" href="css/bootstrap-social.css">
   <link rel="stylesheet" href="css/toaster.min.css">
   <link rel="stylesheet" href="css/iam.css">
+  <link rel="stylesheet" href="css/style.css">
 
 </head>
 
@@ -92,7 +42,7 @@
 
                 <div class="entry-content content">
 
-                  <p>Last updated: 20th January, 2021</p>
+                  <p>Last updated: 2nd February, 2021</p>
 
                   <div id="HelpPage">
                     <p class="body">IRIS DynaFed provides an intuitive, user-friendly federated storage platform for securely managing and accessing your data 
@@ -132,6 +82,10 @@
                       Buckets in DynaFed can only be interacted with by members of the group a bucket is assigned to. If you are not a member of this group, 
                       you will not be able to interact with the bucket in any way. This ensures security and privacy of files and protects your buckets from 
                       unauthorised accesses.
+                      <br>
+                      <br>
+                      To request an account with Echo S3 and to start creating buckets, email the Ceph team at 
+                      <a href="mailto:ceph-support@gridpp.rl.ac.uk">ceph-support@gridpp.rl.ac.uk</a>.
                     </p>
 
                     <h2 class="text-left">IRIS IAM and Groups</h2>
@@ -144,7 +98,8 @@
                       <br>
                       IAM groups are designed to be collaborative and IRIS DynaFed is how users can share their bucket data with their teams. Once an IAM 
                       user is a member of at least one IAM group, they can start using IRIS DynaFed! For information on how to register an IAM account, 
-                      visit <a href="https://iris-iam.stfc.ac.uk/help/" target="blank_">https://iris-iam.stfc.ac.uk/help/</a>.
+                      visit <a href="https://iris-iam.stfc.ac.uk/help/" target="blank_">https://iris-iam.stfc.ac.uk/help/</a>. Register a new IAM group by emailing
+                      <a href="mailto:iris-iam-support@gridpp.rl.ac.uk">iris-iam-support@gridpp.rl.ac.uk</a>.
                     </p>
 
                     <h2 class="text-left">Bucket Importing and Removing</h2>
@@ -183,12 +138,23 @@
                       directories <b>path</b> and <b>to</b> under <b>bucket-name</b>.
                     </p>
 
+                    <h2 class="text-left">File Sharing</h2>
+                    <p class="body">Files can be shared with anyone through the use of presigned URLs. These are URLs for downloading files from a bucket within a set time period.
+                      The current time period for IRIS DynaFed is <b>two hours</b>, meaning the file has to be downloaded from the URL within two hours of it being generated.
+                      <br>
+                        By clicking on the orange icon to the left of a file in a bucket, you can access the file metadata:
+                      <br>
+                      <br>
+                      <img class="middleImg" src="images/metadata.png" alt="File metadata" width="1000">
+                      <br>
+                        From here, you can find the file presigned URL. It begins with <b>https://s3.echo.stfc.ac.uk/</b>.
+                    </p>
+
                     <h2 class="text-left">Additional Help</h2>
                     <p class="body">IRIS DynaFed is managed by the STFC Data Services team. If you have any questions, get in contact with them by email using 
                       <a href="mailto:SCDDSSAdmins@stfc.ac.uk">SCDDSSAdmins@stfc.ac.uk</a>. Additionally, you can consult the IRIS IAM help page for info 
                       on how to use the IRIS IAM portal by navigating to <a href="https://iris-iam.stfc.ac.uk/help/" target="blank_">https://iris-iam.stfc.ac.uk/help/</a>.
                     </p>
-
                   </div>
 
 
