@@ -50,6 +50,7 @@
         setSidebar();
         setGrid();
         setToolbar();
+        checkAdmin();
     });
 
     /*************************************************
@@ -695,11 +696,11 @@ fileSelector.addEventListener('change', handleFileSelect, false);
                 var button = this.get(event.target);
                 switch(button.id) {
                     case 'import_bucket': // Import bucket
-                        requestUserGroups("import");
+                        userInputPopup("import");
                         break;
 
                     case 'remove_bucket': // Remove bucket
-                    requestUserGroups("remove");
+                        userInputPopup("remove");
                         break;
 
                     case 'upload': //Upload
@@ -782,7 +783,7 @@ function sleep(ms) {
 function importBucket() 
 {
     // Read form fields
-	group = document.getElementById('group_list').value;
+	group = document.getElementById('group_input').value;
     bucket = document.getElementById('bucket').value;
     access_key = document.getElementById('access_key').value;
     secret_key = document.getElementById('secret_key').value;
@@ -821,7 +822,7 @@ function importBucket()
  */
 function removeBucket() 
 {
-	group = document.getElementById('group_list').value;
+	group = document.getElementById('group_input').value;
     bucket = document.getElementById('bucket').value;
     access_key = document.getElementById('access_key').value;
     secret_key = document.getElementById('secret_key').value;
@@ -855,44 +856,11 @@ function removeBucket()
 }
 
 /**
- * Perform a request to the server to retrieve a list of the user's IAM groups
- * This comes in the form of a header extracted from a basic PROPFIND request
- * This is set inside the Apache server config
- * @param {string} action - either of "import" or "remove". Displays the relevant popup based on what the user wants to do with a bucket
- */
-function requestUserGroups(action)
-{
-    var x = new XMLHttpRequest();
-    x.open('PROPFIND', location, true);
-    x.onload = function()
-    {
-        try 
-        {
-            user_groups = x.getResponseHeader('oidcgroups').split(",");
-            userInputPopup(user_groups, action);
-        }
-        catch (TypeError)
-        {
-            w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
-            w2ui.grid.unlock();
-        }     
-    };
-    x.onerror = function() 
-    {
-        // Can't allow bucket importing and removing if we don't know the user's IAM groups
-        w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
-        w2ui.grid.unlock();
-    };
-    x.send();
-}
-
-/**
  * Display a popup with input fields for the user to either import or remove a bucket
  * Creates the HTML for the popup and sets a submit action based on what action the user wants to take
- * @param {string[]} user_groups - list of the user's IAM groups (used for the dropdown of groups for the user to choose from)
  * @param {string} action - either of "import" or "remove". Displays the relevant popup based on what the user wants to do with a bucket
  */
-function userInputPopup(user_groups, action)
+function userInputPopup(action)
 {
     /**
      * Creates the four input boxes that make up the info we need from the user. Their group, the bucket, the access key and secret key
@@ -908,22 +876,44 @@ function userInputPopup(user_groups, action)
         group_label.setAttribute("for", "groupname");
         group_label.innerHTML = "Group name:";
     
-        var group_list = document.createElement("select");
-        group_list.setAttribute("name", "group_list");
-        group_list.setAttribute("id", "group_list");
-        var empty = document.createElement("option");
-        empty.setAttribute("disabled", true);
-        empty.setAttribute("selected", true);
-        empty.setAttribute("style", "display: none");
-        empty.innerHTML = "-- Select an option --";
-        group_list.appendChild(empty);
-        for (var i=0; i<user_groups.length; i++)
+        var group_input;
+        if (getCookie("admin") === "true" && action === "import")
         {
-            var group = document.createElement("option");
-            group.setAttribute("value", user_groups[i]);
-            group.innerHTML = user_groups[i];
-            group_list.appendChild(group);
+            group_input = document.createElement("input");
+            group_input.setAttribute("type", "text");
         }
+        else
+        {
+            var user_groups;
+
+            if (getCookie("admin") === "true" && action === "remove")
+            {
+                user_groups = window.existing_groups;
+            }
+            else
+            {
+                user_groups = window.user_groups;
+            }
+
+            group_input = document.createElement("select");
+            var empty = document.createElement("option");
+            empty.setAttribute("disabled", true);
+            empty.setAttribute("selected", true);
+            empty.setAttribute("style", "display: none");
+            empty.innerHTML = "-- Select an option --";
+            group_input.appendChild(empty);
+
+            for (var i=0; i<user_groups.length; i++)
+            {
+                var group = document.createElement("option");
+                group.setAttribute("value", user_groups[i]);
+                group.innerHTML = user_groups[i];
+                group_input.appendChild(group);
+            }
+        }
+        
+        group_input.setAttribute("name", "group_input");
+        group_input.setAttribute("id", "group_input");
     
         var bucket_label = document.createElement("label");
         bucket_label.setAttribute("for", "bucketname");
@@ -952,7 +942,7 @@ function userInputPopup(user_groups, action)
         input_form.appendChild(group_label);
         var br = document.createElement("br");
         input_form.appendChild(br);
-        input_form.appendChild(group_list);
+        input_form.appendChild(group_input);
         var br = document.createElement("br");
         input_form.appendChild(br);
         input_form.appendChild(bucket_label);
@@ -1004,4 +994,90 @@ function userInputPopup(user_groups, action)
             buttons: '<button class="btn" onclick="w2popup.close(); removeBucket();">Remove</button>'
         });
     }
+}
+
+function checkAdmin()
+{
+    var x = new XMLHttpRequest();
+    x.open('PROPFIND', location, true);
+    x.onload = function()
+    {
+        try 
+        {
+            window.user_groups = x.getResponseHeader('oidcgroups').split(",");
+            if (window.user_groups.includes('dynafed/admins'))
+            {
+                var admin_button = document.createElement("button");
+                admin_button.setAttribute("onclick", "changeAdmin();");
+                admin_button.innerHTML = "Admin";
+                document.body.appendChild(admin_button);
+
+                var admin_status = document.createElement("p");
+                admin_status.setAttribute("id", "admin-status");
+                admin_status.innerHTML = "Admin: OFF";
+                document.body.appendChild(admin_status);
+
+                if (getCookie("admin") === "true")
+                {
+                    loadAdmin();
+                }
+            }
+        }
+        catch (TypeError)
+        {
+            w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
+            w2ui.grid.unlock();
+        }     
+    };
+    x.onerror = function() 
+    {
+        // Can't allow bucket importing and removing if we don't know the user's IAM groups
+        w2alert('Error - failed to fetch user groups. Bucket importing and removing is disabled.');
+        w2ui.grid.unlock();
+    };
+    x.send();
+}
+
+function changeAdmin()
+{
+    if (getCookie("admin") === "false")
+    {
+        document.cookie = "admin=true";
+        loadAdmin();
+    }
+    else
+    {
+        document.cookie = "admin=false";
+        var admin_status = document.getElementById('admin-status');
+        admin_status.innerHTML = "Admin: OFF";
+    }
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) == ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+}
+
+function loadAdmin()
+{
+    $.get("/cgi-bin/get_groups.py")
+    .done(function(resp) {
+        window.existing_groups = resp;
+        var admin_status = document.getElementById('admin-status');
+        admin_status.innerHTML = "Admin: ON";
+    })
+    .fail(function() {
+        w2alert('Failed to set admin state. Admin functionality will not be available');
+    })
 }
