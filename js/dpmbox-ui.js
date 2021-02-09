@@ -740,6 +740,9 @@ fileSelector.addEventListener('change', handleFileSelect, false);
 // New functionality
 //////////////////////////////////////////////////////////////////
 
+window.existing_groups = null;
+window.blacklisted_buckets = null;
+
 // File extensions that open in browser instead of download
 // If user tries to download a file with extension in this list, download takes place through XHR instead of through presigned URL
 var fileTypesThatOpen = [
@@ -824,34 +827,67 @@ function removeBucket()
 {
 	group = document.getElementById('group_input').value;
     bucket = document.getElementById('bucket').value;
-    access_key = document.getElementById('access_key').value;
-    secret_key = document.getElementById('secret_key').value;
 
-    if (group && bucket && access_key && secret_key && group != "-- Select an option --")
+    if (getCookie("admin") !== "true")
     {
-        $.post("/cgi-bin/remove.py", {
-            'group': group,
-            'bucket': bucket,
-            'public_key': access_key,
-            'private_key': secret_key
-        })
-        .done(function(resp) {
-            window.location.href = config.server;      
-        })
-        .fail(function(resp) {
-            w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
-        })
-        .always(function() {
-            $('html, body').animate({ scrollTop: 0 }, 'fast');
-            w2ui.grid.unlock();
-        });
-      
-        return true;
+        access_key = document.getElementById('access_key').value;
+        secret_key = document.getElementById('secret_key').value;
+
+        if (group && bucket && access_key && secret_key && group != "-- Select an option --")
+        {
+            $.post("/cgi-bin/remove.py", {
+                'group': group,
+                'bucket': bucket,
+                'public_key': access_key,
+                'private_key': secret_key
+            })
+            .done(function(resp) {
+                window.location.href = config.server;      
+            })
+            .fail(function(resp) {
+                w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
+            })
+            .always(function() {
+                $('html, body').animate({ scrollTop: 0 }, 'fast');
+                w2ui.grid.unlock();
+            });
+        
+            return true;
+        }
+        else
+        {
+            w2alert('Please fill out all fields.');
+            return false;
+        }
     }
-    else
+    else        // admin does not need to provide bucket keys
     {
-        w2alert('Please fill out all fields.');
-        return false;
+        if (group && bucket && group != "-- Select an option --")
+        {
+            $.post("/cgi-bin/remove.py", {
+                'group': group,
+                'bucket': bucket,
+                'groups': window.user_groups,
+                'admin_operation': true
+            })
+            .done(function(resp) {
+                window.location.href = config.server;      
+            })
+            .fail(function(resp) {
+                w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
+            })
+            .always(function() {
+                $('html, body').animate({ scrollTop: 0 }, 'fast');
+                w2ui.grid.unlock();
+            });
+        
+            return true;
+        }
+        else
+        {
+            w2alert('Please fill out all fields.');
+            return false;
+        }
     }
 }
 
@@ -922,23 +958,7 @@ function userInputPopup(action)
         bucket.setAttribute("type", "text");
         bucket.setAttribute("id", "bucket");
         bucket.setAttribute("name", "bucket");
-    
-        var access_key_label = document.createElement("label");
-        access_key_label.setAttribute("for", "access_key");
-        access_key_label.innerHTML = "Access key:";
-        var access_key = document.createElement("input");
-        access_key.setAttribute("type", "text");
-        access_key.setAttribute("id", "access_key");
-        access_key.setAttribute("name", "access_key");
-    
-        var secret_key_label = document.createElement("label");
-        secret_key_label.setAttribute("for", "bucketname");
-        secret_key_label.innerHTML = "Secret key:";
-        var secret_key = document.createElement("input");
-        secret_key.setAttribute("type", "password");
-        secret_key.setAttribute("id", "secret_key");
-        secret_key.setAttribute("name", "secret_key");
-    
+
         input_form.appendChild(group_label);
         var br = document.createElement("br");
         input_form.appendChild(br);
@@ -951,16 +971,37 @@ function userInputPopup(action)
         input_form.appendChild(bucket);
         var br = document.createElement("br");
         input_form.appendChild(br);
-        input_form.appendChild(access_key_label);
-        var br = document.createElement("br");
-        input_form.appendChild(br);
-        input_form.appendChild(access_key);
-        var br = document.createElement("br");
-        input_form.appendChild(br);
-        input_form.appendChild(secret_key_label);
-        var br = document.createElement("br");
-        input_form.appendChild(br);
-        input_form.appendChild(secret_key);
+
+        var adminRemoving = getCookie("admin") === "true" && action === "remove";
+        if (!adminRemoving)     // admins don't need to provide bucket keys to remove buckets
+        {
+            var access_key_label = document.createElement("label");
+            access_key_label.setAttribute("for", "access_key");
+            access_key_label.innerHTML = "Access key:";
+            var access_key = document.createElement("input");
+            access_key.setAttribute("type", "text");
+            access_key.setAttribute("id", "access_key");
+            access_key.setAttribute("name", "access_key");
+        
+            var secret_key_label = document.createElement("label");
+            secret_key_label.setAttribute("for", "bucketname");
+            secret_key_label.innerHTML = "Secret key:";
+            var secret_key = document.createElement("input");
+            secret_key.setAttribute("type", "password");
+            secret_key.setAttribute("id", "secret_key");
+            secret_key.setAttribute("name", "secret_key");
+
+            input_form.appendChild(access_key_label);
+            var br = document.createElement("br");
+            input_form.appendChild(br);
+            input_form.appendChild(access_key);
+            var br = document.createElement("br");
+            input_form.appendChild(br);
+            input_form.appendChild(secret_key_label);
+            var br = document.createElement("br");
+            input_form.appendChild(br);
+            input_form.appendChild(secret_key);
+        }
 
         html = input_form.outerHTML;
         return html;
@@ -1071,13 +1112,100 @@ function getCookie(cname) {
 
 function loadAdmin()
 {
-    $.get("/cgi-bin/get_groups.py")
-    .done(function(resp) {
-        window.existing_groups = resp;
+    if (window.existing_groups === null)
+    {
+        $.get("/cgi-bin/get_groups.py")
+        .done(function(resp) {
+            window.existing_groups = resp;
+            var admin_status = document.getElementById('admin-status');
+            admin_status.innerHTML = "Admin: ON";
+        })
+        .fail(function() {
+            w2alert('Failed to set admin state. Admin functionality will not be available');
+        })
+    }
+    else
+    {
         var admin_status = document.getElementById('admin-status');
         admin_status.innerHTML = "Admin: ON";
-    })
-    .fail(function() {
-        w2alert('Failed to set admin state. Admin functionality will not be available');
-    })
+    }
+}
+
+function blacklistPopup()
+{
+    function getBlacklist()
+    {
+        if (window.blacklisted_buckets === null)
+        {
+            $.get("/cgi-bin/get_blacklist.py")
+            .done(function(resp) {
+                buckets = resp;
+                window.blacklisted_buckets = buckets;
+    
+                w2ui.grid.lock();
+    
+                w2popup.open({
+                    title: "Blacklist",
+                    body: composeHtml(buckets),
+                    modal: false,
+                    showClose: true,
+                    onClose: w2ui.grid.unlock(),
+                    width: 600,
+                    height: 400,
+                    buttons: '<button class="btn" onclick="w2popup.close();">Close</button>'
+                });
+            })
+            .fail(function() {
+                w2alert('Failed to fetch blacklist. Try again later.');
+            })
+        }
+        else
+        {
+            w2ui.grid.lock();
+    
+            w2popup.open({
+                title: "Blacklist",
+                body: composeHtml(window.blacklisted_buckets),
+                modal: false,
+                showClose: true,
+                onClose: w2ui.grid.unlock(),
+                width: 600,
+                height: 400,
+                buttons: '<button class="btn" onclick="w2popup.close();">Close</button>'
+            });
+        }
+    }
+
+    /**
+     * Creates the HTML for the blacklist popup box
+     */
+    function composeHtml(buckets)
+    {
+        if (buckets.length === 0)
+        {
+            return '<p>Blacklist is empty.</p>';
+        }
+
+        var html;        
+        var scrollbox = document.createElement("div");
+        scrollbox.style.overflow = "scroll";
+        scrollbox.style.overflowX = "hidden";
+
+        var string = "";
+
+        for (var i=0; i<buckets.length; i++)
+        {
+            // var p_element = document.createElement("p");
+            // p_element.style.fontSize = 14;
+            // p_element.innerHTML = buckets[i];
+            // scrollbox.innerHTML += p_element;
+            string += buckets[i] + "<br />";
+        }
+        
+        scrollbox.innerHTML = string;
+        html = scrollbox.outerHTML;
+        return html;
+    }
+
+    getBlacklist();
 }
