@@ -913,7 +913,7 @@ function userInputPopup(action)
         group_label.innerHTML = "Group name:";
     
         var group_input;
-        if (getCookie("admin") === "true" && action === "import")
+        if (isAdmin() && action === "import")
         {
             group_input = document.createElement("input");
             group_input.setAttribute("type", "text");
@@ -922,7 +922,7 @@ function userInputPopup(action)
         {
             var user_groups;
 
-            if (getCookie("admin") === "true" && action === "remove")
+            if (isAdmin() && action === "remove")
             {
                 user_groups = window.existing_groups;
             }
@@ -972,7 +972,7 @@ function userInputPopup(action)
         var br = document.createElement("br");
         input_form.appendChild(br);
 
-        var adminRemoving = getCookie("admin") === "true" && action === "remove";
+        var adminRemoving = isAdmin() && action === "remove";
         if (!adminRemoving)     // admins don't need to provide bucket keys to remove buckets
         {
             var access_key_label = document.createElement("label");
@@ -1081,7 +1081,7 @@ function checkAdmin()
 
 function changeAdmin()
 {
-    if (getCookie("admin") === "false")
+    if (getCookie("admin") !== "true")
     {
         document.cookie = "admin=true";
         loadAdmin();
@@ -1131,41 +1131,19 @@ function loadAdmin()
     }
 }
 
-function blacklistPopup()
+function showBlacklist()
 {
     function getBlacklist()
     {
-        if (window.blacklisted_buckets === null)
-        {
-            $.get("/cgi-bin/get_blacklist.py")
-            .done(function(resp) {
-                buckets = resp;
-                window.blacklisted_buckets = buckets;
-    
-                w2ui.grid.lock();
-    
-                w2popup.open({
-                    title: "Blacklist",
-                    body: composeHtml(buckets),
-                    modal: false,
-                    showClose: true,
-                    onClose: w2ui.grid.unlock(),
-                    width: 600,
-                    height: 400,
-                    buttons: '<button class="btn" onclick="w2popup.close();">Close</button>'
-                });
-            })
-            .fail(function() {
-                w2alert('Failed to fetch blacklist. Try again later.');
-            })
-        }
-        else
-        {
+        $.get("/cgi-bin/get_blacklist.py")
+        .done(function(resp) {
+            window.blacklisted_buckets = resp;
+
             w2ui.grid.lock();
-    
+
             w2popup.open({
                 title: "Blacklist",
-                body: composeHtml(window.blacklisted_buckets),
+                body: composeHtml(),
                 modal: false,
                 showClose: true,
                 onClose: w2ui.grid.unlock(),
@@ -1173,39 +1151,188 @@ function blacklistPopup()
                 height: 400,
                 buttons: '<button class="btn" onclick="w2popup.close();">Close</button>'
             });
-        }
+        })
+        .fail(function() {
+            w2alert('Failed to fetch blacklist. Try again later.');
+        })
     }
 
     /**
      * Creates the HTML for the blacklist popup box
      */
-    function composeHtml(buckets)
+    function composeHtml()
     {
-        if (buckets.length === 0)
+        var html = "";
+
+        if (isAdmin())
         {
-            return '<p>Blacklist is empty.</p>';
+            html = '<button onclick=enterBucketForBlacklist("add");>Add to blacklist</button>';
         }
 
-        var html;        
+        if (window.blacklisted_buckets.length === 0)
+        {
+            return html + '<p>Blacklist is empty.</p>';
+        }
+        else if (isAdmin())
+        {
+            html += '<button onclick=enterBucketForBlacklist("remove");>Remove from blacklist</button>'
+        }
+      
         var scrollbox = document.createElement("div");
         scrollbox.style.overflow = "scroll";
         scrollbox.style.overflowX = "hidden";
 
         var string = "";
 
-        for (var i=0; i<buckets.length; i++)
+        for (var i=0; i<window.blacklisted_buckets.length; i++)
         {
             // var p_element = document.createElement("p");
             // p_element.style.fontSize = 14;
-            // p_element.innerHTML = buckets[i];
+            // p_element.innerHTML = window.blacklisted_buckets[i];
             // scrollbox.innerHTML += p_element;
-            string += buckets[i] + "<br />";
+            string += window.blacklisted_buckets[i] + "<br />";
         }
         
         scrollbox.innerHTML = string;
-        html = scrollbox.outerHTML;
+        html += scrollbox.outerHTML;
         return html;
     }
 
     getBlacklist();
+}
+
+function enterBucketForBlacklist(action)
+{
+    function composeHtml(action)
+    {
+        var html; 
+
+        var message = document.createElement('p');
+
+        if (action === "add")
+        {
+            message.innerHTML = "Input the name of the bucket to blacklist";
+            var blacklist_bucket = document.createElement("input");
+            blacklist_bucket.setAttribute("type", "text");
+            blacklist_bucket.setAttribute("id", "blacklist_bucket");
+            blacklist_bucket.setAttribute("name", "blacklist_bucket");
+
+            html = message.outerHTML + blacklist_bucket.outerHTML;
+        }
+        else
+        {
+            message.innerHTML = "Select bucket to remove from blacklist";
+            var blacklist_bucket = document.createElement("select");
+            blacklist_bucket.setAttribute("id", "blacklist_bucket");
+            blacklist_bucket.setAttribute("name", "blacklist_bucket");
+            var empty = document.createElement("option");
+            empty.setAttribute("disabled", true);
+            empty.setAttribute("selected", true);
+            empty.setAttribute("style", "display: none");
+            empty.innerHTML = "-- Select an option --";
+            blacklist_bucket.appendChild(empty);
+
+            for (var i=0; i<window.blacklisted_buckets.length; i++)
+            {
+                var bucket = document.createElement("option");
+                bucket.setAttribute("value", window.blacklisted_buckets[i]);
+                bucket.innerHTML = window.blacklisted_buckets[i];
+                blacklist_bucket.appendChild(bucket);
+            }
+
+            html = message.outerHTML + blacklist_bucket.outerHTML;
+        }
+
+        return html;
+    }
+
+    if (action === "add")        // set the action of the popup as blacklisting a bucket
+    {
+        w2popup.open({
+            title: "Blacklist a bucket",
+            body: composeHtml(action),
+            modal: false,
+            showClose: true,
+            onClose: w2ui.grid.unlock(),
+            width: 600,
+            height: 400,
+            buttons: '<button class="btn" onclick="w2popup.close(); bucket = document.getElementById(\'blacklist_bucket\').value; addToBlacklist(bucket);">Blacklist</button>'
+        });
+    }
+    else
+    {
+        w2popup.open({
+            title: "Remove from blacklist",
+            body: composeHtml(action),
+            modal: false,
+            showClose: true,
+            onClose: w2ui.grid.unlock(),
+            width: 600,
+            height: 400,
+            buttons: '<button class="btn" onclick="w2popup.close(); bucket = document.getElementById(\'blacklist_bucket\').value; removeFromBlacklist(bucket);">Remove from blacklist</button>'
+        });
+    }
+}
+
+function isAdmin()
+{
+    return getCookie("admin") === "true" && window.user_groups.includes('dynafed/admins')
+}
+
+function addToBlacklist(bucket)
+{
+    if (bucket && bucket != "-- Select an option --")
+    {
+        $.post("/cgi-bin/add_to_blacklist.py", {
+            'bucket': bucket,
+            'groups': window.user_groups,
+            'admin_operation': true
+        })
+        .done(function(resp) {
+            w2alert("Successfully added " + bucket + " to blacklist.");   
+        })
+        .fail(function(resp) {
+            w2alert("Failed to add " + bucket + " to blacklist. Try again later.");
+        })
+        .always(function() {
+            $('html, body').animate({ scrollTop: 0 }, 'fast');
+            w2ui.grid.unlock();
+        });
+    
+        return true;
+    }
+    else
+    {
+        w2alert('Please enter a bucket name.');
+        return false;
+    }
+}
+
+function removeFromBlacklist(bucket)
+{
+    if (bucket && bucket != "-- Select an option --")
+    {
+        $.post("/cgi-bin/remove_from_blacklist.py", {
+            'bucket': bucket,
+            'groups': window.user_groups,
+            'admin_operation': true
+        })
+        .done(function(resp) {
+            w2alert("Successfully removed " + bucket + " from blacklist.");      
+        })
+        .fail(function(resp) {
+            w2alert("Failed to remove " + bucket + " from blacklist. Try again later.");
+        })
+        .always(function() {
+            $('html, body').animate({ scrollTop: 0 }, 'fast');
+            w2ui.grid.unlock();
+        });
+    
+        return true;
+    }
+    else
+    {
+        w2alert('Please enter a bucket name.');
+        return false;
+    }
 }
