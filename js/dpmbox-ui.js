@@ -804,9 +804,9 @@ function importBucket()
             w2alert('Successfully imported ' + bucket + ' for ' + group + '. It may take up to 10 mins to be accessible.');
         })
         .fail(function(resp) {
-            w2alert('Failed to import bucket ' + bucket + ' for group ' + group + '. The bucket may already exist or its information may be incorrect.');
+            importResponse(resp, group, bucket);
         })
-        .always(function() {
+        .always(function(resp) {
             $('html, body').animate({ scrollTop: 0 }, 'fast');
             w2ui.grid.unlock();
         });
@@ -817,6 +817,28 @@ function importBucket()
     {
         w2alert('Please fill out all fields.');
         return false;
+    }
+}
+
+function importResponse(resp, group, bucket)
+{
+    switch(resp.status)
+    {
+        case 409: 
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group + '. The bucket already exists for this group.');
+            break;
+        case 500: 
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group + '. A server configuration error occurred.');
+            break;
+        case 404: 
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group + '. The bucket does not exist or its keys are incorrect.');
+            break;
+        case 403: 
+            w2alert('Failed to import bucket ' + bucket + ' for group ' + group + '. The bucket has been blacklisted by the server admins.');
+            break;
+        case 400: 
+            w2alert('Invalid request.');
+            break;
     }
 }
 
@@ -842,12 +864,23 @@ function removeBucket()
                 'private_key': secret_key
             })
             .done(function(resp) {
-                window.location.href = config.server;      
+                w2popup.open({
+                    title: "Notification",
+                    body: "<p>Successfully removed " + bucket + " from group " + group + ".</p>",
+                    modal: false,
+                    showClose: true,
+                    onClose: w2ui.grid.unlock(),
+                    width: 450,
+                    height: 220,
+                    buttons: '<button class="btn" onclick="w2popup.close(); window.location.href = config.server;">Close</button>'
+                });
+                //window.location.href = config.server;      
             })
             .fail(function(resp) {
-                w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
+                removeResponse(resp, group, bucket);
+                //w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
             })
-            .always(function() {
+            .always(function(resp) {
                 $('html, body').animate({ scrollTop: 0 }, 'fast');
                 w2ui.grid.unlock();
             });
@@ -871,10 +904,21 @@ function removeBucket()
                 'admin_operation': true
             })
             .done(function(resp) {
-                window.location.href = config.server;      
+                w2popup.open({
+                    title: "Notification",
+                    body: "<p>Successfully removed " + bucket + " from group " + group + ".</p>",
+                    modal: false,
+                    showClose: true,
+                    onClose: w2ui.grid.unlock(),
+                    width: 450,
+                    height: 220,
+                    buttons: '<button class="btn" onclick="w2popup.close(); window.location.href = config.server;">Close</button>'
+                });
+                //window.location.href = config.server;      
             })
             .fail(function(resp) {
-                w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
+                removeResponse(resp, group, bucket);
+                //w2alert('Failed to remove bucket ' + bucket + ' for group ' + group + '. The bucket may not exist or its information may be incorrect.');
             })
             .always(function() {
                 $('html, body').animate({ scrollTop: 0 }, 'fast');
@@ -888,6 +932,25 @@ function removeBucket()
             w2alert('Please fill out all fields.');
             return false;
         }
+    }
+}
+
+function removeResponse(resp, group, bucket)
+{
+    switch(resp.status)
+    {
+        case 409: 
+            w2alert('Failed to remove bucket ' + bucket + ' from group ' + group + '. The bucket is not mapped to this group.');
+            break;
+        case 500: 
+            w2alert('Failed to remove bucket ' + bucket + ' from group ' + group + '. A server configuration error occurred.');
+            break;
+        case 404: 
+            w2alert('Failed to remove bucket ' + bucket + ' from group ' + group + '. The bucket does not exist or its keys are incorrect.');
+            break;
+        case 400: 
+            w2alert('Invalid request.');
+            break;
     }
 }
 
@@ -1050,6 +1113,7 @@ function checkAdmin()
             {
                 var admin_button = document.createElement("button");
                 admin_button.setAttribute("onclick", "changeAdmin();");
+                admin_button.setAttribute("id", "admin-button");
                 admin_button.innerHTML = "Admin";
                 document.body.appendChild(admin_button);
 
@@ -1089,6 +1153,8 @@ function changeAdmin()
     else
     {
         document.cookie = "admin=false";
+        var blacklist_button = document.getElementById('blacklist-button');
+        blacklist_button.remove();
         var admin_status = document.getElementById('admin-status');
         admin_status.innerHTML = "Admin: OFF";
     }
@@ -1117,6 +1183,7 @@ function loadAdmin()
         $.get("/cgi-bin/get_groups.py")
         .done(function(resp) {
             window.existing_groups = resp;
+            resetBlacklistButton();
             var admin_status = document.getElementById('admin-status');
             admin_status.innerHTML = "Admin: ON";
         })
@@ -1126,9 +1193,20 @@ function loadAdmin()
     }
     else
     {
+        resetBlacklistButton();
         var admin_status = document.getElementById('admin-status');
         admin_status.innerHTML = "Admin: ON";
     }
+}
+
+function resetBlacklistButton()
+{
+    var admin_button = document.getElementById('admin-button');
+    var blacklist_button = document.createElement("button");
+    blacklist_button.setAttribute("onclick", "showBlacklist();");
+    blacklist_button.setAttribute("id", "blacklist-button");
+    blacklist_button.innerHTML = "Blacklist";
+    admin_button.parentNode.insertBefore(blacklist_button, admin_button.nextSibling);
 }
 
 function showBlacklist()
@@ -1164,19 +1242,19 @@ function showBlacklist()
     {
         var html = "";
 
-        if (isAdmin())
-        {
+        //if (isAdmin())
+        //{
             html = '<button onclick=enterBucketForBlacklist("add");>Add to blacklist</button>';
-        }
+        //}
 
         if (window.blacklisted_buckets.length === 0)
         {
             return html + '<p>Blacklist is empty.</p>';
         }
-        else if (isAdmin())
-        {
+        //else if (isAdmin())
+        //{
             html += '<button onclick=enterBucketForBlacklist("remove");>Remove from blacklist</button>'
-        }
+        //}
       
         var scrollbox = document.createElement("div");
         scrollbox.style.overflow = "scroll";
