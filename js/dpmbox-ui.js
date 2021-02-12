@@ -793,6 +793,17 @@ function importBucket()
 
     if (group && bucket && access_key && secret_key && group != "-- Select an option --")
     {
+        if (!validateInput("group", group))
+        {
+            w2alert("Group name is invalid.");
+            return false;
+        }
+        else if (!validateInput("bucket", bucket))
+        {
+            w2alert("Bucket name is invalid.");
+            return false;
+        }
+
         $.post("/cgi-bin/import.py", {
             'group': group,
             'bucket': bucket,
@@ -857,6 +868,17 @@ function removeBucket()
 
         if (group && bucket && access_key && secret_key && group != "-- Select an option --")
         {
+            if (!validateInput("group", group))
+            {
+                w2alert("Group name is invalid.");
+                return false;
+            }
+            else if (!validateInput("bucket", bucket))
+            {
+                w2alert("Bucket name is invalid.");
+                return false;
+            }
+
             $.post("/cgi-bin/remove.py", {
                 'group': group,
                 'bucket': bucket,
@@ -965,8 +987,17 @@ function userInputPopup(action)
      * Creates the four input boxes that make up the info we need from the user. Their group, the bucket, the access key and secret key
      */
     function composeHtml(){
-        var html;
+        var html = "";
         
+        if (isAdmin())
+        {
+            var admin_warning = document.createElement("p");
+            var text = document.createTextNode("WARNING: admin privileges are on. Any changes to buckets will affect live users.");
+            admin_warning.appendChild(text);
+            admin_warning.style.color = "red";
+            html += admin_warning.outerHTML;
+        }
+
         var input_form = document.createElement("form");
         input_form.setAttribute("id", "input_form");
         input_form.setAttribute("align", "center");
@@ -1066,7 +1097,7 @@ function userInputPopup(action)
             input_form.appendChild(secret_key);
         }
 
-        html = input_form.outerHTML;
+        html += input_form.outerHTML;
         return html;
     }
 
@@ -1283,7 +1314,13 @@ function enterBucketForBlacklist(action)
 {
     function composeHtml(action)
     {
-        var html; 
+        var html = ""; 
+
+        var admin_warning = document.createElement("p");
+        var text = document.createTextNode("WARNING: admin privileges are on. Any changes to the blacklist will affect live users.");
+        admin_warning.appendChild(text);
+        admin_warning.style.color = "red";
+        html += admin_warning.outerHTML;
 
         var message = document.createElement('p');
 
@@ -1295,7 +1332,7 @@ function enterBucketForBlacklist(action)
             blacklist_bucket.setAttribute("id", "blacklist_bucket");
             blacklist_bucket.setAttribute("name", "blacklist_bucket");
 
-            html = message.outerHTML + blacklist_bucket.outerHTML;
+            html += message.outerHTML + blacklist_bucket.outerHTML;
         }
         else
         {
@@ -1318,7 +1355,7 @@ function enterBucketForBlacklist(action)
                 blacklist_bucket.appendChild(bucket);
             }
 
-            html = message.outerHTML + blacklist_bucket.outerHTML;
+            html += message.outerHTML + blacklist_bucket.outerHTML;
         }
 
         return html;
@@ -1361,6 +1398,12 @@ function addToBlacklist(bucket)
 {
     if (bucket && bucket != "-- Select an option --")
     {
+        if (!validateInput("bucket", bucket))
+        {
+            w2alert("Bucket name is invalid.");
+            return false;
+        }
+
         $.post("/cgi-bin/add_to_blacklist.py", {
             'bucket': bucket,
             'groups': window.user_groups,
@@ -1370,7 +1413,7 @@ function addToBlacklist(bucket)
             w2alert("Successfully added " + bucket + " to blacklist.");   
         })
         .fail(function(resp) {
-            w2alert("Failed to add " + bucket + " to blacklist. Try again later.");
+            blacklistAddResponse(resp, bucket);
         })
         .always(function() {
             $('html, body').animate({ scrollTop: 0 }, 'fast');
@@ -1386,10 +1429,35 @@ function addToBlacklist(bucket)
     }
 }
 
+function blacklistAddResponse(resp, bucket)
+{
+    switch(resp.status)
+    {
+        case 409: 
+            w2alert('Failed to add bucket ' + bucket + ' to blacklist. The bucket is already in the blacklist.');
+            break;
+        case 500: 
+            w2alert('Failed to add bucket ' + bucket + ' to blacklist. Blacklist could not be synchronised.');
+            break;
+        case 403: 
+            w2alert('Failed to add bucket ' + bucket + ' to blacklist. Could not verify admin privileges.');
+            break;
+        case 400: 
+            w2alert('Invalid request.');
+            break;
+    }
+}
+
 function removeFromBlacklist(bucket)
 {
     if (bucket && bucket != "-- Select an option --")
     {
+        if (!validateInput("bucket", bucket))
+        {
+            w2alert("Bucket name is invalid.");
+            return false;
+        }
+
         $.post("/cgi-bin/remove_from_blacklist.py", {
             'bucket': bucket,
             'groups': window.user_groups,
@@ -1399,7 +1467,7 @@ function removeFromBlacklist(bucket)
             w2alert("Successfully removed " + bucket + " from blacklist.");      
         })
         .fail(function(resp) {
-            w2alert("Failed to remove " + bucket + " from blacklist. Try again later.");
+            blacklistRemoveResponse(resp, bucket);
         })
         .always(function() {
             $('html, body').animate({ scrollTop: 0 }, 'fast');
@@ -1412,5 +1480,38 @@ function removeFromBlacklist(bucket)
     {
         w2alert('Please enter a bucket name.');
         return false;
+    }
+}
+
+function blacklistRemoveResponse(resp, bucket)
+{
+    switch(resp.status)
+    {
+        case 409: 
+            w2alert('Failed to remove bucket ' + bucket + ' from blacklist. The bucket is not in the blacklist.');
+            break;
+        case 500: 
+            w2alert('Failed to remove bucket ' + bucket + ' from blacklist. Blacklist could not be synchronised.');
+            break;
+        case 403: 
+            w2alert('Failed to remove bucket ' + bucket + ' from blacklist. Could not verify admin privileges.');
+            break;
+        case 400: 
+            w2alert('Invalid request.');
+            break;
+    }
+}
+
+function validateInput(type, input)
+{
+    var group_validation = "^([^\\s\/-]{1,}[\/-]{0,1})*[^\\s\/-]{1,}$";
+    var bucket_validation = "^([^*&%\\s\/-]{1,}[-]{0,1})*[^*&%\\s\/-]{1,}$";     // no forward slashes (conflicts with object paths so is an invalid char)
+    if (type === "group")
+    {
+        return input.match(group_validation) ? true : false;
+    }
+    else if (type === "bucket")
+    {
+        return input.match(bucket_validation) ? true : false;
     }
 }
