@@ -116,6 +116,9 @@ body{
 
 #help-button {
 	margin-left: 10%;
+}
+
+.blue-button {
 	display: inline-block;
 	padding: 6px 12px;
 	border-radius: 5px;

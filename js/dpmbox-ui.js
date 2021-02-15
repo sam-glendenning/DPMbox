@@ -995,6 +995,7 @@ function userInputPopup(action)
             var text = document.createTextNode("WARNING: admin privileges are on. Any changes to buckets will affect live users.");
             admin_warning.appendChild(text);
             admin_warning.style.color = "red";
+            admin_warning.style.textAlign = "center";
             html += admin_warning.outerHTML;
         }
 
@@ -1145,13 +1146,24 @@ function checkAdmin()
                 var admin_button = document.createElement("button");
                 admin_button.setAttribute("onclick", "changeAdmin();");
                 admin_button.setAttribute("id", "admin-button");
-                admin_button.innerHTML = "Admin";
+                admin_button.setAttribute("class", "blue-button");
+                admin_button.innerHTML = "Admin On/Off";
                 document.body.appendChild(admin_button);
+
+                var br = document.createElement("br");
+                document.body.appendChild(br);
 
                 var admin_status = document.createElement("p");
                 admin_status.setAttribute("id", "admin-status");
-                admin_status.innerHTML = "Admin: OFF";
+                admin_status.style.display = "inline-block";
+                admin_status.innerHTML = "Admin: ";
                 document.body.appendChild(admin_status);
+                var admin_status_onoff = document.createElement("p");
+                admin_status_onoff.setAttribute("id", "admin-status-onoff");
+                admin_status_onoff.style.display = "inline-block";
+                admin_status_onoff.style.color = "red";
+                admin_status_onoff.innerHTML = "OFF";
+                document.body.appendChild(admin_status_onoff);
 
                 if (getCookie("admin") === "true")
                 {
@@ -1186,8 +1198,9 @@ function changeAdmin()
         document.cookie = "admin=false";
         var blacklist_button = document.getElementById('blacklist-button');
         blacklist_button.remove();
-        var admin_status = document.getElementById('admin-status');
-        admin_status.innerHTML = "Admin: OFF";
+        var admin_status_onoff = document.getElementById('admin-status-onoff');
+        admin_status_onoff.style.color = "red";
+        admin_status_onoff.innerHTML = "OFF";
     }
 }
 
@@ -1215,8 +1228,9 @@ function loadAdmin()
         .done(function(resp) {
             window.existing_groups = resp;
             resetBlacklistButton();
-            var admin_status = document.getElementById('admin-status');
-            admin_status.innerHTML = "Admin: ON";
+            var admin_status_onoff = document.getElementById('admin-status-onoff');
+            admin_status_onoff.style.color = "#1CB200";
+            admin_status_onoff.innerHTML = "ON";
         })
         .fail(function() {
             w2alert('Failed to set admin state. Admin functionality will not be available');
@@ -1225,8 +1239,9 @@ function loadAdmin()
     else
     {
         resetBlacklistButton();
-        var admin_status = document.getElementById('admin-status');
-        admin_status.innerHTML = "Admin: ON";
+        var admin_status_onoff = document.getElementById('admin-status-onoff');
+        admin_status_onoff.style.color = "#1CB200";
+        admin_status_onoff.innerHTML = "ON";
     }
 }
 
@@ -1236,6 +1251,7 @@ function resetBlacklistButton()
     var blacklist_button = document.createElement("button");
     blacklist_button.setAttribute("onclick", "showBlacklist();");
     blacklist_button.setAttribute("id", "blacklist-button");
+    blacklist_button.setAttribute("class", "blue-button");
     blacklist_button.innerHTML = "Blacklist";
     admin_button.parentNode.insertBefore(blacklist_button, admin_button.nextSibling);
 }
@@ -1271,21 +1287,14 @@ function showBlacklist()
      */
     function composeHtml()
     {
-        var html = "";
-
-        //if (isAdmin())
-        //{
-            html = '<button onclick=enterBucketForBlacklist("add");>Add to blacklist</button>';
-        //}
+        var html = '<button onclick=enterBucketForBlacklist("add");>Add to blacklist</button>';
 
         if (window.blacklisted_buckets.length === 0)
         {
             return html + '<p>Blacklist is empty.</p>';
         }
-        //else if (isAdmin())
-        //{
-            html += '<button onclick=enterBucketForBlacklist("remove");>Remove from blacklist</button>'
-        //}
+
+        html += '<button onclick=enterBucketForBlacklist("remove");>Remove from blacklist</button>'
       
         var scrollbox = document.createElement("div");
         scrollbox.style.overflow = "scroll";
@@ -1295,10 +1304,6 @@ function showBlacklist()
 
         for (var i=0; i<window.blacklisted_buckets.length; i++)
         {
-            // var p_element = document.createElement("p");
-            // p_element.style.fontSize = 14;
-            // p_element.innerHTML = window.blacklisted_buckets[i];
-            // scrollbox.innerHTML += p_element;
             string += window.blacklisted_buckets[i] + "<br />";
         }
         
@@ -1320,26 +1325,34 @@ function enterBucketForBlacklist(action)
         var text = document.createTextNode("WARNING: admin privileges are on. Any changes to the blacklist will affect live users.");
         admin_warning.appendChild(text);
         admin_warning.style.color = "red";
+        admin_warning.style.textAlign = "center";
         html += admin_warning.outerHTML;
 
         var message = document.createElement('p');
+        message.style.textAlign = "center";
 
         if (action === "add")
         {
             message.innerHTML = "Input the name of the bucket to blacklist";
+            var input_div = document.createElement("div");
+            input_div.style.textAlign = "center";
             var blacklist_bucket = document.createElement("input");
             blacklist_bucket.setAttribute("type", "text");
             blacklist_bucket.setAttribute("id", "blacklist_bucket");
             blacklist_bucket.setAttribute("name", "blacklist_bucket");
+            input_div.appendChild(blacklist_bucket);
 
-            html += message.outerHTML + blacklist_bucket.outerHTML;
+            html += message.outerHTML + input_div.outerHTML;
         }
         else
         {
             message.innerHTML = "Select bucket to remove from blacklist";
+            var input_div = document.createElement("div");
+            input_div.style.textAlign = "center";
             var blacklist_bucket = document.createElement("select");
             blacklist_bucket.setAttribute("id", "blacklist_bucket");
             blacklist_bucket.setAttribute("name", "blacklist_bucket");
+            blacklist_bucket.style.textAlign = "center";
             var empty = document.createElement("option");
             empty.setAttribute("disabled", true);
             empty.setAttribute("selected", true);
@@ -1355,7 +1368,9 @@ function enterBucketForBlacklist(action)
                 blacklist_bucket.appendChild(bucket);
             }
 
-            html += message.outerHTML + blacklist_bucket.outerHTML;
+            input_div.appendChild(blacklist_bucket);
+
+            html += message.outerHTML + input_div.outerHTML;
         }
 
         return html;
