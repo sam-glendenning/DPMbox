@@ -426,7 +426,7 @@ fileSelector.addEventListener('change', handleFileSelect, false);
             }
             xhr.onerror = function()
             {
-                w2alert("Error. File " + sUrl.substr(url.lastIndexOf("/")+1) + " failed to download. Try again later.");
+                w2alert("Error. File failed to download. Try again later.");
                 return false;
             }
             xhr.send();
