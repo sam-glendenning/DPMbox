@@ -156,7 +156,7 @@ function removeBucket()
             .done(function(resp) {
                 w2popup.open({
                     title: "Notification",
-                    body: "<p>Successfully removed " + bucket + " from group " + group + ".</p>",
+                    body: "<p>Successfully removed " + bucket + " from group " + group + ". The change may take up to 10 mins to propogate.</p>",
                     modal: false,
                     showClose: true,
                     onClose: w2ui.grid.unlock(),
