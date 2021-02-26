@@ -764,7 +764,8 @@ var fileTypesThatOpen = [
     ".html",
     ".css",
     ".js",
-    ".xml"
+    ".xml",
+    "json"
 ];
 
 /**
