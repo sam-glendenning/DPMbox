@@ -3,6 +3,7 @@
  */
 
 window.existing_groups = null;
+window.user_groups = null;
 
 /**
  * Called for every page reload. Checks to see if a user is a member of the DynaFed IAM admin group dynafed/admins.
@@ -18,7 +19,16 @@ function checkAdmin()
     {
         try 
         {
-            window.user_groups = x.getResponseHeader('oidcgroups').split(",");
+            var group_string = x.getResponseHeader('oidcgroups');
+            if (group_string.includes(','))
+            {
+                window.user_groups = group_string.split(",");
+            }
+            else
+            {
+                window.user_groups = [group_string];
+            }
+            
             if (window.user_groups.includes('dynafed/admins'))
             {
                 var admin_button = document.createElement("button");
