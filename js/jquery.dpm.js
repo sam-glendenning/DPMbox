@@ -41,7 +41,7 @@
         GET:                1,
         POST:               1,
         HEAD:               2,
-        PUT:                2,
+        PUT:                1,
         DELETE:             2,
         PROPFIND:           3,
         PROPPATCH:          3,

@@ -20,7 +20,6 @@
  *
  * ============================================================ */
 
-
 //An anonymous function to keep things outside the global scope
 (function (window, document, undefined) {
 
@@ -51,6 +50,7 @@
         setSidebar();
         setGrid();
         setToolbar();
+        checkAdmin();
     });
 
     /*************************************************
@@ -114,16 +114,23 @@
      * @func: function to execute on close of the popup
      */
     function errorPopup(xhr, func){
-        w2popup.open({
-            title: 'Error: ' +  xhr.statusText[0].toUpperCase() + xhr.statusText.substring(1)  + ' ('+ xhr.status + ')',
-            body: xhr.responseText,
-            modal: false,
-            showClose: true,
-            onClose: func,
-            width: 600,
-            height: 400,
-            buttons: '<button class="btn" onclick="w2popup.close();">Accept</button>'
-        });
+        if (xhr.status === 401)
+        {
+            location.reload(true);
+        }
+        else
+        {
+            w2popup.open({
+                title: 'Error: ' +  xhr.statusText[0].toUpperCase() + xhr.statusText.substring(1)  + ' ('+ xhr.status + ')',
+                body: xhr.responseText,
+                modal: false,
+                showClose: true,
+                onClose: func,
+                width: 600,
+                height: 400,
+                buttons: '<button class="btn" onclick="w2popup.close();">Accept</button>'
+            });
+        }
     }
 
     /* A summary popup that prints the files that have been processed or not.
@@ -195,19 +202,122 @@
 
     function handleFileSelect(evt) { //This is kind of a mess now. Upload manager: TODO
 
+    //     var files = evt.target.files; // files is a FileList of File objects.
+    //     w2ui.grid.lock('Uploading...');
+
+    //     for (var i = 0; i < files.length; i++) {
+    //             /* Though they work differently, this upload method works for WebDAV and DPM servers.
+    //              * Anyway, maybe a better differentiation of the differents situations can be done.
+    //              * TODO
+    //              */
+
+    //             /* We create a first PUT request, the server will answer
+    //              * with the Location header, where we then send the
+    //              * second PUT and the real upload will be made.
+    //              */
+
+    //             $.ajax({
+    //                 method: 'PUT',
+    //                 url: config.server + location.pathname + files[i].name,
+    //                 // headers: {
+    //                 //     'X-No-Redirect': 1,
+    //                 //     'Access-Control-Request-Headers': 'Origin'
+    //                 // },
+    //                 data: ' ',
+    //                 actual_data: files[i],
+    //                 async: true,
+    //                 complete: function(xhr) {
+
+    //                     // Not reaching here because the returned xhr does not contain the necessary Allow Origin header
+
+    //                     switch(xhr.status){
+    //                         case 201: //Almost uploaded (WebDAV),
+    //                         case 202: //Accepted by the server (DPM)
+    //                             // let formdata = new FormData();
+    //                             // formdata.append("file", this.actual_data);
+    //                             // fetch(xhr.getResponseHeader('Location'), { 
+    //                             //     method: 'POST', 
+    //                             //     body: formdata
+    //                             // }).then(function(xhr) {
+    //                             //     switch(xhr.status){
+    //                             //         case 204: //Uploaded (WebDAV)
+    //                             //         case 201: //Uploaded (DPM)
+    //                             //             w2ui.grid.unlock();
+    //                             //             w2alert('Uploaded ' + escapeHtml(this.data.name) + '(' + (this.data.type || 'n/a') + ') - ' + this.data.size + ' bytes', 'Upload complete');
+    //                             //             refreshContent(location.pathname);
+    //                             //             break;
+    //                             //         default: //Unknown error (permissions, network...)
+    //                             //             errorPopup(xhr, w2ui.grid.unlock());
+    //                             //     }
+    //                             // });
+    //                             // break;
+
+
+    //                             // console.log(xhr.getAllResponseHeaders());
+    //                             // const xhr2 = new XMLHttpRequest();
+    //                             // //xhr2.withCredentials = true;
+    //                             // let formdata = new FormData();
+    //                             // formdata.append("file", this.actual_data);
+
+    //                             // xhr2.addEventListener("readystatechange", function() {
+    //                             //     if(this.readyState === 4) {
+    //                             //       console.log(this.responseText);
+    //                             //     }
+    //                             // });
+
+    //                             // xhr2.open("POST", xhr.getResponseHeader('Location'));
+    //                             // xhr2.send(formdata); 
+    //                             // w2ui.grid.unlock();
+    //                             // refreshContent(location.pathname);
+    //                             // break
+
+    //                             $.dpm(xhr.getResponseHeader('Location')).put({
+    //                                 complete:  function(xhr) {
+    //                                     switch(xhr.status){
+    //                                         case 204: //Uploaded (WebDAV)
+    //                                         case 201: //Uploaded (DPM)
+    //                                             w2ui.grid.unlock();
+    //                                             w2alert('Uploaded ' + escapeHtml(this.data.name) + '(' + (this.data.type || 'n/a') + ') - ' + this.data.size + ' bytes', 'Upload complete');
+    //                                             refreshContent(location.pathname);
+    //                                             break;
+    //                                         default: //Unknown error (permissions, network...)
+    //                                             errorPopup(xhr, w2ui.grid.unlock());
+    //                                     }
+    //                                 },
+    //                                 async: true,
+    //                                 data: this.actual_data,
+    //                                 contentType: false,
+    //                                 processData: false
+    //                             });
+    //                             break;
+    //                         default: //Unknown error (permissions, network...)
+    //                             errorPopup(xhr, w2ui.grid.unlock());
+    //                     }
+    //                 }
+    //             });
+    //     }
+
+    // }
+
+    // document.body.appendChild(selectDialogueLink);
+    // fileSelector.addEventListener('change', handleFileSelect, false);
+
         var files = evt.target.files; // files is a FileList of File objects.
         w2ui.grid.lock('Uploading...');
 
         for (var i = 0; i < files.length; i++) {
                 /* Though they work differently, this upload method works for WebDAV and DPM servers.
-                 * Anyway, maybe a better differentiation of the differents situations can be done.
-                 * TODO
-                 */
+                * Anyway, maybe a better differentiation of the differents situations can be done.
+                * TODO
+                */
 
                 /* We create a first PUT request, the server will answer
-                 * with the Location header, where we then send the
-                 * second PUT and the real upload will be made.
-                 */
+                * with the Location header, where we then send the
+                * second PUT and the real upload will be made. A preflight OPTIONS request is made to the s3.echo URL first
+                * to check if it allows PUT requests from this domain. If it does (which it should, all imported buckets are given the
+                * right CORS configuration), then the upload can take place.
+                */
+
                 $.ajax({
                     method: 'PUT',
                     url: config.server + location.pathname + files[i].name,
@@ -221,9 +331,10 @@
                         switch(xhr.status){
                             case 201: //Almost uploaded (WebDAV),
                             case 202: //Accepted by the server (DPM)
+
                                 $.dpm(xhr.getResponseHeader('Location')).put({
-                                    complete:  function(xhr) {
-                                        switch(xhr.status){
+                                    complete:  function(xhr2) {
+                                        switch(xhr2.status){
                                             case 204: //Uploaded (WebDAV)
                                             case 201: //Uploaded (DPM)
                                                 w2ui.grid.unlock();
@@ -231,7 +342,7 @@
                                                 refreshContent(location.pathname);
                                                 break;
                                             default: //Unknown error (permissions, network...)
-                                                errorPopup(xhr, w2ui.grid.unlock());
+                                                errorPopup(xhr2, w2ui.grid.unlock());
                                         }
                                     },
                                     async: true,
@@ -249,8 +360,8 @@
 
     }
 
-    document.body.appendChild(selectDialogueLink);
-    fileSelector.addEventListener('change', handleFileSelect, false);
+document.body.appendChild(selectDialogueLink);
+fileSelector.addEventListener('change', handleFileSelect, false);
 
 
     /*************************************************
@@ -260,52 +371,93 @@
      * Article about: http://pixelscommander.com/en/javascript/javascript-file-download-ignore-content-type/
      *************************************************/
 
-    var downloadFile = function (sUrl) {
+    /**
+     * Handles sequential downloading of a list of files
+     * Sets a two-second delay between each download
+     * Some browsers have a problem with lots of files being requested to download at once. This gets around that
+     * @param {string[]} urls 
+     */
+    function downloadManager(urls)
+    {
+        if (urls.length == 0)
+        {
+            return;
+        }
+        var url = urls.shift();
+        downloadSingleFile(url);
+        sleep(2000).then(() => {
+            downloadManager(urls);
+        });
+    }
+
+    /**
+     * Used for downloading a single file from a given URL
+     * @param {string} sUrl 
+     */
+    var downloadSingleFile = function (sUrl) {
         //iOS devices do not support downloading. We have to inform user about this.
         if (/(iP)/g.test(navigator.userAgent)) {
             w2alert('Your device does not support files downloading. Please try again in desktop browser.');
             return false;
         }
-        //If in Chrome or Safari - download via virtual link click
-        if (downloadFile.isChrome || downloadFile.isSafari) {
-            //Creating new link node.
-            var link = document.createElement('a');
-            link.href = sUrl;
 
-            if (link.download !== undefined) {
-                //Set HTML5 download attribute. This will prevent file from opening if supported.
-                var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
-                link.download = fileName;
-            }
-            //Dispatching click event.
-            if (document.createEvent) {
-                var e = document.createEvent('MouseEvents');
-                e.initEvent('click', true, true);
-                link.dispatchEvent(e);
+        // This is to support file downloading when that file would open in the browser by default instead of downloading
+        // Usually the HTML download attribute in <a> elements solves this
+        // However, CORS blocks this and our files are coming cross origin so this doesn't work
+        // So we download the file to the server first through an XHR and then send it to the user
+        // This is only taxing if it's a large file
+        // Most files don't have this issue but some file types do, like txt, py, etc.
+        var fileExtension = "." + sUrl.substring(sUrl.lastIndexOf('.')+1, sUrl.length) || sUrl;
+        if (fileTypesThatOpen.includes(fileExtension))
+        {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", sUrl, true);
+            xhr.responseType = "blob";
+            xhr.onload = function(){
+                var urlCreator = window.URL || window.webkitURL;
+                var url = urlCreator.createObjectURL(this.response);
+                var tag = document.createElement('a');
+                tag.href = url;
+                tag.download = sUrl.substr(sUrl.lastIndexOf("/")+1);
+                document.body.appendChild(tag);
+                tag.click();
+                document.body.removeChild(tag);
                 return true;
             }
+            xhr.onerror = function()
+            {
+                w2alert("Error. File failed to download. Try again later.");
+                return false;
+            }
+            xhr.send();
         }
-        window.open(sUrl, '_self');
-        return true;
+        else
+        {
+            //If in Chrome or Safari - download via virtual link click
+            if (downloadSingleFile.isChrome || downloadSingleFile.isSafari) {
+                //Creating new link node.
+                var link = document.createElement('a');
+                link.href = sUrl;
+
+                if (link.download !== undefined) {
+                    //Set HTML5 download attribute. This will prevent file from opening if supported.
+                    var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
+                    link.download = fileName;
+                }
+                //Dispatching click event.
+                if (document.createEvent) {
+                    var e = document.createEvent('MouseEvents');
+                    e.initEvent('click', true, true);
+                    link.dispatchEvent(e);
+                    return true;
+                }
+            }
+            window.open(sUrl, '_self');
+            return true;
+        }
     };
-    downloadFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
-    downloadFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
-
-
-    /*************************************************
-     * Setting the link to the previous UI
-     * It basically just set a cookie on the browser
-     *************************************************/
-
-    var oldUILink = document.createElement('a');
-    oldUILink.setAttribute('href', '#');
-    oldUILink.innerText = 'Switch back to old UI';
-    oldUILink.text = 'Switch back to old UI';
-    oldUILink.onclick = function() {
-    	document.cookie = 'lcgdm_dav.ui=old; path=/; expires=Thu, 1 January 1970 00:00:00 GMT;';
-    	location.reload(true);
-    };
-    document.body.appendChild(oldUILink);
+    downloadSingleFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+    downloadSingleFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
 
 
     /*************************************************
@@ -417,7 +569,7 @@
                 toolbarReload   : true,
                 toolbarColumns  : true,
                 toolbarSearch   : true,
-                toolbarDelete   : true
+                toolbarDelete   : false		// set to false to make system fully read-only. Will be added back when uploading is working
             },
             multiSearch: true,
             searches: [
@@ -436,7 +588,7 @@
                 {'caption':'Size','field':'size','size':'20','min':'15','max':'','sortable':true,'resizable':true, 'render': function (record) {return sizeNotBt(record.size);}},
                 // {'caption':'Size','field':'size','size':'20','min':'15','max':'','sortable':true,'resizable':true},
                 {'caption':'Modified','field':'mdate','size':'40%','min':'15','max':'','sortable':true,'resizable':true, 'render': function (record) {return w2utils.formatDateTime(record.mdate, 'dd/mm/yyyy,| hh24:mm:ss');}},
-                {'caption':'Modified','field':'mdate','size':'40%','min':'15','max':'','sortable':true,'resizable':true, 'render': 'date', 'hidden': true}
+                //{'caption':'Modified','field':'mdate','size':'40%','min':'15','max':'','sortable':true,'resizable':true, 'render': 'date', 'hidden': true}
             ],
             records: [
             ],
@@ -472,9 +624,9 @@
                 if (event.column === 0)
                     window.location = (config.server + event.recid + '?metalink');
             },
-            onDblClick: function(event){
-                w2ui.toolbar.click('download');
-            },
+            // onDblClick: function(event){
+            //     w2ui.toolbar.click('download');
+            // },
             onDelete: function (event) {
                 event.preventDefault(); //Needed by the (weird) way w2ui works... When false the deletion will be executed 2 times (¿?)
 
@@ -531,84 +683,24 @@
         $('#toolbar_div').w2toolbar({
             name: 'toolbar',
             items: [
-                { type: 'button',  id: 'new_col',  caption: 'New directory', icon: 'fa fa-plus-square' },
-                { type: 'button',  id: 'del_col',  caption: 'Delete directory', icon: 'fa fa-minus-square' },
+                { type: 'button',  id: 'import_bucket',  caption: 'Import bucket', icon: 'fa fa-plus-square' },
+                { type: 'button',  id: 'remove_bucket',  caption: 'Remove bucket', icon: 'fa fa-minus-square' },
                 { type: 'spacer' },
-                { type: 'button',  id: 'upload',  caption: 'Upload', icon: 'fa fa-upload' },
+
+                // Upload currently disabled
+                //{ type: 'button',  id: 'upload',  caption: 'Upload', icon: 'fa fa-upload' },
+
                 { type: 'button',  id: 'download',  caption: 'Download', icon: 'fa fa-download' }
             ],
             onClick: function (event) {
                 var button = this.get(event.target);
                 switch(button.id) {
-                    case 'new_col': //New collection
-
-                        w2confirm({
-                            msg          : '<label>Name: </label>' +
-                                            '<input id="col_name_input" name="name" type="text" style="width: 80%"/>',
-                            title        : 'New collection',
-                            height       : 200,       //height of the dialog
-                            yes_text     : 'Accept',  //text for yes button
-                            no_text      : 'Cancel',  //text for no button
-                        })
-                            .yes(function () {
-                                w2ui.grid.lock('Creating...');
-                                var collection_name = $(col_name_input).val();
-                                var route = config.server + location.pathname + collection_name;
-                                if (collection_name)
-                                    $.dpm(route).mkcol({
-                                        complete: function(xhr) {
-                                            switch(xhr.status){
-                                                case 201:
-                                                    w2ui.grid.unlock();
-                                                    refreshSidebar(w2ui.sidebar.selected);
-                                                    break;
-                                                default: //Error 403 forbidden, or other unknow error
-                                                    errorPopup(xhr, function () {
-                                                        w2ui.grid.unlock();
-                                                        refreshSidebar(w2ui.sidebar.selected);
-                                                    });
-                                                    break;
-                                            }
-                                        }
-                                    });
-                                else{
-                                    w2alert('Invalid collection name');
-                                    w2ui.toolbar.click('new_col'); //Reopen the name input dialog
-                                }
-                            })
-                            .no(function () {
-                            });
+                    case 'import_bucket': // Import bucket
+                        userInputPopup("import");
                         break;
 
-                    case 'del_col': //Delete collection
-
-                        w2confirm({
-                            // msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(w2ui.sidebar.get(w2ui.sidebar.selected).path)),
-                            msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(location.pathname)),
-                            title        : 'Delete collection',
-                            yes_text     : 'Accept',     // text for yes button
-                            no_text      : 'Cancel',      // text for no button
-                        })
-                            .yes(function () {
-                                w2ui.grid.lock('Deleting...');
-                                $.dpm(config.server + location.pathname).remove({
-                                    complete: function(xhr) {
-                                        switch(xhr.status){
-                                            case 204:
-                                                w2ui.grid.unlock();
-                                                var parent = w2ui.sidebar.get(w2ui.sidebar.selected).parent.id;
-                                                w2ui.sidebar.remove(w2ui.sidebar.selected);
-                                                refreshSidebar(parent);
-                                                w2ui.sidebar.select(parent);
-                                                break;
-                                            default: //Error 403 forbidden, or other unknow error
-                                                errorPopup(xhr, w2ui.grid.unlock());
-                                            }
-                                    }
-                                });
-                            })
-                            .no(function () {
-                            });
+                    case 'remove_bucket': // Remove bucket
+                        userInputPopup("remove");
                         break;
 
                     case 'upload': //Upload
@@ -616,7 +708,26 @@
                         break;
 
                     case 'download': //Download
-                        downloadFile(config.server + w2ui.grid.getSelection());
+                        var selectedFiles = w2ui.grid.getSelection();
+                        if (selectedFiles.length > 1)
+                        {
+                            w2confirm({
+                                // msg          : 'The following collection (including all its content) will be deleted:<br><br>' + config.server + escapeHtml(decodeURI(w2ui.sidebar.get(w2ui.sidebar.selected).path)),
+                                msg          : 'Downloading multiple files. Continue?',
+                                title        : 'Download confirmation',
+                                yes_text     : 'Yes',     // text for yes button
+                                no_text      : 'No',      // text for no button
+                            })
+                            .yes(function() {
+                                downloadManager(selectedFiles)
+                            })
+                            .no(function(){});
+                        }
+                        else
+                        {
+                            downloadSingleFile(selectedFiles[0]);
+                        }
+
                         break;
                 }
             }
@@ -624,3 +735,59 @@
     }
 
 })(window, document); //End of anonymous function to keep things outside the global scope
+
+//////////////////////////////////////////////////////////////////
+// New functionality
+//////////////////////////////////////////////////////////////////
+
+// File extensions that open in browser instead of download
+// If user tries to download a file with extension in this list, download takes place through XHR instead of through presigned URL
+var fileTypesThatOpen = [
+    ".txt", 
+    ".py", 
+    ".pdf", 
+    ".png", 
+    ".jpg", 
+    ".mp3", 
+    ".gif", 
+    ".svg", 
+    ".tiff", 
+    ".raw", 
+    ".bmp",
+    ".3gp",
+    ".mp4",
+    ".webp",
+    ".avi",
+    ".midi",
+    ".wav",
+    ".jpeg",
+    ".html",
+    ".css",
+    ".js",
+    ".xml",
+    "json"
+];
+
+/**
+ * Used to create an artificial delay between downloading files.
+ * Initiating too many downloads at once can prevent all of them from downloading
+ * Adding a delay helps prevent this
+ * @param {int} ms - the number of milliseconds to delay by
+ */
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function validateInput(type, input)
+{
+    var group_validation = "^([^\\s\/-]{1,}[\/-]{0,1})*[^\\s\/-]{1,}$";
+    var bucket_validation = "^([^*&%\\s\/-]{1,}[-]{0,1})*[^*&%\\s\/-]{1,}$";     // no forward slashes (conflicts with object paths so is an invalid char)
+    if (type === "group")
+    {
+        return input.match(group_validation) ? true : false;
+    }
+    else if (type === "bucket")
+    {
+        return input.match(bucket_validation) ? true : false;
+    }
+}

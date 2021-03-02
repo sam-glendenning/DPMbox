@@ -9748,7 +9748,7 @@ var w2confirm = function (msg, title, callBack) {
                 }
                 if (this.get(this, node.id) !== null) {
                     txt = (node.caption != null ? node.caption : node.text);
-                    console.log('ERROR: Cannot insert node with id='+ node.id +' (text: '+ txt + ') because another node with the same id already exists.');
+                    //console.log('ERROR: Cannot insert node with id='+ node.id +' (text: '+ txt + ') because another node with the same id already exists.');
                     continue;
                 }
                 tmp = $.extend({}, w2sidebar.prototype.node, node);
@@ -10273,7 +10273,7 @@ var w2confirm = function (msg, title, callBack) {
             return (new Date()).getTime() - time;
         },
 
-        refresh: function (id) {
+        refresh: async function (id) {
             var time = (new Date()).getTime();
             // if (window.getSelection) window.getSelection().removeAllRanges(); // clear selection
             // event before
@@ -10309,7 +10309,7 @@ var w2confirm = function (msg, title, callBack) {
             var nodeHTML;
             if (node !== this) {
                 var tmp    = '#node_'+ w2utils.escapeId(node.id);
-                nodeHTML    = getNodeHTML(node);
+                nodeHTML    = await getNodeHTML(node);
                 $(this.box).find(tmp).before('<div id="sidebar_'+ this.name + '_tmp"></div>');
                 $(this.box).find(tmp).remove();
                 $(this.box).find(nm).remove();
@@ -10320,7 +10320,7 @@ var w2confirm = function (msg, title, callBack) {
             $(this.box).find(nm).html('');
             for (var i = 0; i < node.nodes.length; i++) {
                 nd = node.nodes[i];
-                nodeHTML = getNodeHTML(nd);
+                nodeHTML = await getNodeHTML(nd);
                 $(this.box).find(nm).append(nodeHTML);
                 if (nd.nodes.length !== 0) { this.refresh(nd.id); }
             }
@@ -10329,56 +10329,104 @@ var w2confirm = function (msg, title, callBack) {
             return (new Date()).getTime() - time;
 
             function getNodeHTML(nd) {
-                var html = '';
-                var img  = nd.img;
-                if (img === null) img = this.img;
-                var icon = nd.icon;
-                if (icon === null) icon = this.icon;
-                // -- find out level
-                var tmp   = nd.parent;
-                var level = 0;
-                while (tmp && tmp.parent !== null) {
-                    if (tmp.group) level--;
-                    tmp = tmp.parent;
-                    level++;
-                }
-                if (typeof nd.caption != 'undefined') nd.text = nd.caption;
-                if (nd.group) {
-                    html =
-                        '<div class="w2ui-node-group"  id="node_'+ nd.id +'"'+
-                        '        onclick="w2ui[\''+ obj.name +'\'].toggle(\''+ nd.id +'\')"'+
-                        '        onmouseout="$(this).find(\'span:nth-child(1)\').css(\'color\', \'transparent\')" '+
-                        '        onmouseover="$(this).find(\'span:nth-child(1)\').css(\'color\', \'inherit\')">'+
-                        (nd.groupShowHide ? '<span>'+ (!nd.hidden && nd.expanded ? w2utils.lang('Hide') : w2utils.lang('Show')) +'</span>' : '<span></span>') +
-                        '    <span>'+ nd.text +'</span>'+
-                        '</div>'+
-                        '<div class="w2ui-node-sub" id="node_'+ nd.id +'_sub" style="'+ nd.style +';'+ (!nd.hidden && nd.expanded ? '' : 'display: none;') +'"></div>';
-                } else {
-                    if (nd.selected && !nd.disabled) obj.selected = nd.id;
-                    tmp = '';
-                    if (img) tmp = '<div class="w2ui-node-image w2ui-icon '+ img +    (nd.selected && !nd.disabled ? " w2ui-icon-selected" : "") +'"></div>';
-                    if (icon) tmp = '<div class="w2ui-node-image"><span class="'+ icon +'"></span></div>';
-                    html =
-                    '<div class="w2ui-node '+ (nd.selected ? 'w2ui-selected' : '') +' '+ (nd.disabled ? 'w2ui-disabled' : '') +'" id="node_'+ nd.id +'" style="'+ (nd.hidden ? 'display: none;' : '') +'"'+
-                        '    ondblclick="w2ui[\''+ obj.name +'\'].dblClick(\''+ nd.id +'\', event);"'+
-                        '    oncontextmenu="w2ui[\''+ obj.name +'\'].contextMenu(\''+ nd.id +'\', event); '+
-                        '        if (event.preventDefault) event.preventDefault();"'+
-                        '    onClick="w2ui[\''+ obj.name +'\'].click(\''+ nd.id +'\', event); ">'+
-                        '<table cellpadding="0" cellspacing="0" style="margin-left:'+ (level*18) +'px; padding-right:'+ (level*18) +'px"><tr>'+
-                        '<td class="w2ui-node-dots" nowrap onclick="w2ui[\''+ obj.name +'\'].toggle(\''+ nd.id +'\'); '+
-                        '        if (event.stopPropagation) event.stopPropagation(); else event.cancelBubble = true;">'+
-                        '    <div class="w2ui-expand">'    + (nd.nodes.length > 0 ? (nd.expanded ? '-' : '+') : (nd.plus ? '+' : '')) + '</div>' +
-                        '</td>'+
-                        '<td class="w2ui-node-data" nowrap>'+
-                            tmp +
-                            (nd.count || nd.count === 0 ? '<div class="w2ui-node-count">'+ nd.count +'</div>' : '') +
-                            '<div class="w2ui-node-caption">'+ nd.text +'</div>'+
-                        '</td>'+
-                        '</tr></table>'+
-                    '</div>'+
-                    '<div class="w2ui-node-sub" id="node_'+ nd.id +'_sub" style="'+ nd.style +';'+ (!nd.hidden && nd.expanded ? '' : 'display: none;') +'"></div>';
-                }
-                return html;
+                return new Promise(async function(resolve, reject)
+                {
+                    var html = '';
+                    var img  = nd.img;
+                    if (img === null) img = this.img;
+                    var icon = nd.icon;
+                    if (icon === null) icon = this.icon;
+                    // -- find out level
+                    var tmp   = nd.parent;
+                    var level = 0;
+                    while (tmp && tmp.parent !== null) {
+                        if (tmp.group) level--;
+                        tmp = tmp.parent;
+                        level++;
+                    }
+                    if (typeof nd.caption != 'undefined') nd.text = nd.caption;
+                    if (nd.group) {
+                        html =
+                            '<div class="w2ui-node-group"  id="node_'+ nd.id +'"'+
+                            '        onclick="w2ui[\''+ obj.name +'\'].toggle(\''+ nd.id +'\')"'+
+                            '        onmouseout="$(this).find(\'span:nth-child(1)\').css(\'color\', \'transparent\')" '+
+                            '        onmouseover="$(this).find(\'span:nth-child(1)\').css(\'color\', \'inherit\')">'+
+                            (nd.groupShowHide ? '<span>'+ (!nd.hidden && nd.expanded ? w2utils.lang('Hide') : w2utils.lang('Show')) +'</span>' : '<span></span>') +
+                            '    <span>'+ nd.text +'</span>'+
+                            '</div>'+
+                            '<div class="w2ui-node-sub" id="node_'+ nd.id +'_sub" style="'+ nd.style +';'+ (!nd.hidden && nd.expanded ? '' : 'display: none;') +'"></div>';
+                    } 
+                    else 
+                    {
+                        if (window.user_groups === null)
+                        {
+                            window.user_groups = await getUserGroups();
+                        }
+
+                        res = window.user_groups.includes(nd.text.replace('-', '/'));
+                        if (!res)
+                        {
+                            var location_arr = location.pathname.split('/');
+                            var federation = location_arr[1];
+
+                            if (nd.text === federation)    // for example, /gridpp
+                            {
+                                res = true;
+                            }
+                            else if (location_arr.length > 2)
+                            {
+                                var group = location_arr[2];
+                                if (window.user_groups.includes(group.replace('-', '/')))
+                                {
+                                    res = true;                                    
+                                }
+                            }
+                        }
+                        if (res || isAdmin())
+                        {
+                            if (nd.selected && !nd.disabled) obj.selected = nd.id;
+                            tmp = '';
+                            if (img) tmp = '<div class="w2ui-node-image w2ui-icon '+ img +    (nd.selected && !nd.disabled ? " w2ui-icon-selected" : "") +'"></div>';
+                            if (icon) tmp = '<div class="w2ui-node-image"><span class="'+ icon +'"></span></div>';
+                            html =
+                            '<div class="w2ui-node '+ (nd.selected ? 'w2ui-selected' : '') +' '+ (nd.disabled ? 'w2ui-disabled' : '') +'" id="node_'+ nd.id +'" style="'+ (nd.hidden ? 'display: none;' : '') +'"'+
+                                '    ondblclick="w2ui[\''+ obj.name +'\'].dblClick(\''+ nd.id +'\', event);"'+
+                                '    oncontextmenu="w2ui[\''+ obj.name +'\'].contextMenu(\''+ nd.id +'\', event); '+
+                                '        if (event.preventDefault) event.preventDefault();"'+
+                                '    onClick="w2ui[\''+ obj.name +'\'].click(\''+ nd.id +'\', event); ">'+
+                                '<table cellpadding="0" cellspacing="0" style="margin-left:'+ (level*18) +'px; padding-right:'+ (level*18) +'px"><tr>'+
+                                '<td class="w2ui-node-dots" nowrap onclick="w2ui[\''+ obj.name +'\'].toggle(\''+ nd.id +'\'); '+
+                                '        if (event.stopPropagation) event.stopPropagation(); else event.cancelBubble = true;">'+
+                                '    <div class="w2ui-expand">'    + (nd.nodes.length > 0 ? (nd.expanded ? '-' : '+') : (nd.plus ? '+' : '')) + '</div>' +
+                                '</td>'+
+                                '<td class="w2ui-node-data" nowrap>'+
+                                    tmp +
+                                    (nd.count || nd.count === 0 ? '<div class="w2ui-node-count">'+ nd.count +'</div>' : '') +
+                                    '<div class="w2ui-node-caption">'+ nd.text +'</div>'+
+                                '</td>'+
+                                '</tr></table>'+
+                            '</div>'+
+                            '<div class="w2ui-node-sub" id="node_'+ nd.id +'_sub" style="'+ nd.style +';'+ (!nd.hidden && nd.expanded ? '' : 'display: none;') +'"></div>';    
+                        }
+                        else
+                        {
+                            html = "";
+
+                            if (!Array.isArray(window.user_groups) || !window.user_groups.length)
+                            {
+                                if (!document.getElementById("add-a-group"))
+                                {
+                                    var no_groups = document.createElement("h3");
+                                    no_groups.setAttribute("id", "add-a-group");
+                                    no_groups.innerHTML = 'You are not a member of any IAM groups. Join a group on the IAM dashboard or email iris-iam-support@gridpp.rl.ac.uk to request a group.';
+                                    var sidebar = document.getElementsByClassName('w2ui-node-sub')[1];
+                                    sidebar.append(no_groups);
+                                }
+                            }
+                        }
+                    }
+                    resolve(html);
+                });
             }
         },
 
@@ -13696,3 +13744,43 @@ var w2confirm = function (msg, title, callBack) {
     $.extend(w2form.prototype, w2utils.event);
     w2obj.form = w2form;
 })();
+
+window.user_groups = null;
+
+function getUserGroups()
+{
+    return new Promise(function(resolve, reject)
+    {
+        var user_groups = []
+        var x = new XMLHttpRequest();
+        x.open('PROPFIND', location, true);
+        x.onload = function()
+        {
+            try 
+            {
+                var group_string = x.getResponseHeader('oidcgroups');
+                if (group_string.includes(','))
+                {
+                    user_groups = x.getResponseHeader('oidcgroups').split(",");
+                }
+                else
+                {
+                    user_groups = [group_string];
+                }
+                
+                resolve(user_groups);
+            }
+            catch (TypeError)
+            {
+                w2ui.grid.unlock();
+                resolve([]);
+            }     
+        };
+        x.onerror = function() 
+        {
+            w2ui.grid.unlock();
+            resolve([]);
+        };
+        x.send();
+    });
+}

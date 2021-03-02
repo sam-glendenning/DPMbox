@@ -33,7 +33,7 @@
   */
 
 var config = {
-    display_name: 'Disk Pool Manager', //This will be the title name displayed in the interface
+    display_name: 'IRIS DynaFed', //This will be the title name displayed in the interface
     // server: 'http://localhost',
     // root: '/webdav/',
     // server: 'http://lxfsra04a04.cern.ch',
